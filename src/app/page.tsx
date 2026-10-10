@@ -101,7 +101,15 @@ export default function HomePage() {
     }
   };
 
-  const cuisinesList = ["North Indian", "Biryani", "Mughlai", "Pan-Asian", "Dim Sum", "Chinese"];
+  const cuisinesList = [
+    "North Indian",
+    "Biryani",
+    "Italian",
+    "South Indian",
+    "Gourmet Burgers",
+    "Pan-Asian",
+    "Dim Sum",
+  ];
 
   return (
     <div className="space-y-8 pb-12">

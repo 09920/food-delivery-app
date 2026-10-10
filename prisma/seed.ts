@@ -75,6 +75,39 @@ async function main() {
     },
   });
 
+  const staffUser3 = await prisma.user.create({
+    data: {
+      id: "usr_staff_piazza",
+      name: "Chef Marco Rossi",
+      email: "marco@lapiazza.com",
+      phone: "+91 9866554433",
+      role: "RESTAURANT_STAFF",
+      avatarUrl: "https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=256&q=80",
+    },
+  });
+
+  const staffUser4 = await prisma.user.create({
+    data: {
+      id: "usr_staff_dosa",
+      name: "Meenakshi Iyer",
+      email: "meenakshi@dosacraft.com",
+      phone: "+91 9855443322",
+      role: "RESTAURANT_STAFF",
+      avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=256&q=80",
+    },
+  });
+
+  const staffUser5 = await prisma.user.create({
+    data: {
+      id: "usr_staff_burger",
+      name: "Kabir Anand",
+      email: "kabir@burgerfoundry.com",
+      phone: "+91 9844332211",
+      role: "RESTAURANT_STAFF",
+      avatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=256&q=80",
+    },
+  });
+
   const riderUser1 = await prisma.user.create({
     data: {
       id: "usr_rider_amit",
@@ -437,6 +470,393 @@ async function main() {
     },
   });
 
+  // Restaurant 3: La Piazza Rustica (Italian & Woodfired Pizza)
+  const laPiazza = await prisma.restaurant.create({
+    data: {
+      id: "rest_la_piazza",
+      name: "La Piazza Rustica",
+      slug: "la-piazza-rustica",
+      description: "Authentic Neapolitan wood-fired pizzas, slow-simmered artisanal pastas, and traditional Italian dolci made with imported Italian flour and San Marzano tomatoes.",
+      fssaiLicense: "11524003001245",
+      phone: "+91 22 2648 3322",
+      email: "ciao@lapiazza.com",
+      address: "42 14th Road, Khar West",
+      city: "Mumbai",
+      latitude: 19.0682,
+      longitude: 72.8351,
+      deliveryRadiusKm: 10.0,
+      isOpen: true,
+      isApproved: true,
+      averagePreparationMinutes: 25,
+      commissionPercentage: 15.0,
+      rating: 4.7,
+      reviewCount: 184,
+      imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80",
+      cuisineTypes: "Italian, Woodfired Pizza, Pasta, Desserts",
+    },
+  });
+
+  await prisma.restaurantStaff.create({
+    data: {
+      userId: staffUser3.id,
+      restaurantId: laPiazza.id,
+      role: "OWNER",
+    },
+  });
+
+  for (let day = 0; day < 7; day++) {
+    await prisma.operatingHours.create({
+      data: {
+        restaurantId: laPiazza.id,
+        dayOfWeek: day,
+        openTime: "12:00",
+        closeTime: "23:00",
+      },
+    });
+  }
+
+  const catPizzas = await prisma.menuCategory.create({
+    data: {
+      restaurantId: laPiazza.id,
+      name: "Neapolitan Wood-Fired Pizzas",
+      displayOrder: 1,
+    },
+  });
+
+  const catPastas = await prisma.menuCategory.create({
+    data: {
+      restaurantId: laPiazza.id,
+      name: "Handcrafted Artisanal Pastas",
+      displayOrder: 2,
+    },
+  });
+
+  const catDolci = await prisma.menuCategory.create({
+    data: {
+      restaurantId: laPiazza.id,
+      name: "Italian Dolci & Beverages",
+      displayOrder: 3,
+    },
+  });
+
+  await prisma.menuItem.create({
+    data: {
+      id: "item_margherita",
+      restaurantId: laPiazza.id,
+      categoryId: catPizzas.id,
+      name: "Margherita Di Bufala (11 Inch)",
+      description: "San Marzano D.O.P. tomato sauce, fresh buffalo mozzarella, fresh sweet basil, and extra virgin olive oil.",
+      pricePaise: 42900, // Rs 429
+      isVegetarian: true,
+      isAvailable: true,
+      imageUrl: "https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=600&q=80",
+      preparationMinutes: 20,
+    },
+  });
+
+  await prisma.menuItem.create({
+    data: {
+      id: "item_pepperoni",
+      restaurantId: laPiazza.id,
+      categoryId: catPizzas.id,
+      name: "Spicy Pepperoni & Burrata Pizza",
+      description: "Charred leopard-spotted crust topped with Italian pepperoni, tomato passata, mozzarella, and a molten fresh burrata center.",
+      pricePaise: 54900, // Rs 549
+      isVegetarian: false,
+      isAvailable: true,
+      imageUrl: "https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?auto=format&fit=crop&w=600&q=80",
+      preparationMinutes: 22,
+    },
+  });
+
+  await prisma.menuItem.create({
+    data: {
+      id: "item_truffle_pasta",
+      restaurantId: laPiazza.id,
+      categoryId: catPastas.id,
+      name: "Truffle Fettuccine Alfredo",
+      description: "Fresh egg fettuccine tossed in a rich slow-emulsified butter sauce, wild forest mushrooms, and aromatic white truffle essence.",
+      pricePaise: 47900, // Rs 479
+      isVegetarian: true,
+      isAvailable: true,
+      imageUrl: "https://images.unsplash.com/photo-1645112411341-6c4fd023714a?auto=format&fit=crop&w=600&q=80",
+      preparationMinutes: 18,
+    },
+  });
+
+  await prisma.menuItem.create({
+    data: {
+      id: "item_tiramisu",
+      restaurantId: laPiazza.id,
+      categoryId: catDolci.id,
+      name: "Classic Espresso Tiramisu",
+      description: "Italian savoiardi ladyfinger biscuits infused with dark roasted espresso, layered with silky mascarpone and dusted with Valrhona cocoa.",
+      pricePaise: 26900, // Rs 269
+      isVegetarian: true,
+      isAvailable: true,
+      imageUrl: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?auto=format&fit=crop&w=600&q=80",
+      preparationMinutes: 10,
+    },
+  });
+
+  // Restaurant 4: Dosa Craft & Co. (South Indian Heritage)
+  const dosaCraft = await prisma.restaurant.create({
+    data: {
+      id: "rest_dosa_craft",
+      name: "Dosa Craft & Co.",
+      slug: "dosa-craft-co",
+      description: "Legendary South Indian tiffins, crisp golden ghee roast dosas, gunpowder podi specials, steamed fluffy idlis, and authentic froth-topped filter coffee.",
+      fssaiLicense: "11521004000319",
+      phone: "+91 22 2409 5566",
+      email: "vanakkam@dosacraft.com",
+      address: "18 Dr. Ambedkar Road, Matunga East",
+      city: "Mumbai",
+      latitude: 19.0269,
+      longitude: 72.8553,
+      deliveryRadiusKm: 12.0,
+      isOpen: true,
+      isApproved: true,
+      averagePreparationMinutes: 15,
+      commissionPercentage: 15.0,
+      rating: 4.9,
+      reviewCount: 512,
+      imageUrl: "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=1200&q=80",
+      cuisineTypes: "South Indian, Dosas, Tiffin, Pure Veg",
+    },
+  });
+
+  await prisma.restaurantStaff.create({
+    data: {
+      userId: staffUser4.id,
+      restaurantId: dosaCraft.id,
+      role: "OWNER",
+    },
+  });
+
+  for (let day = 0; day < 7; day++) {
+    await prisma.operatingHours.create({
+      data: {
+        restaurantId: dosaCraft.id,
+        dayOfWeek: day,
+        openTime: "07:30",
+        closeTime: "22:30",
+      },
+    });
+  }
+
+  const catDosas = await prisma.menuCategory.create({
+    data: {
+      restaurantId: dosaCraft.id,
+      name: "Signature Ghee Roast Dosas",
+      displayOrder: 1,
+    },
+  });
+
+  const catTiffins = await prisma.menuCategory.create({
+    data: {
+      restaurantId: dosaCraft.id,
+      name: "Steamed Idlis & Crispy Vadas",
+      displayOrder: 2,
+    },
+  });
+
+  const catCoffee = await prisma.menuCategory.create({
+    data: {
+      restaurantId: dosaCraft.id,
+      name: "Traditional South Indian Beverages",
+      displayOrder: 3,
+    },
+  });
+
+  await prisma.menuItem.create({
+    data: {
+      id: "item_mysore_masala",
+      restaurantId: dosaCraft.id,
+      categoryId: catDosas.id,
+      name: "Mysore Ghee Roast Masala Dosa",
+      description: "Crispy red-hot crepe smeared with spicy roasted garlic-chilli chutney, spiced potato bhaji, served with coconut chutney & drumstick sambar.",
+      pricePaise: 18900, // Rs 189
+      isVegetarian: true,
+      isAvailable: true,
+      imageUrl: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80",
+      preparationMinutes: 12,
+    },
+  });
+
+  await prisma.menuItem.create({
+    data: {
+      id: "item_podi_dosa",
+      restaurantId: dosaCraft.id,
+      categoryId: catDosas.id,
+      name: "Chettinad Gunpowder Podi Dosa",
+      description: "Drizzled generously with pure aromatic cow ghee and crusted with homemade spicy roasted lentil gunpowder podi.",
+      pricePaise: 19900, // Rs 199
+      isVegetarian: true,
+      isAvailable: true,
+      imageUrl: "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=600&q=80",
+      preparationMinutes: 12,
+    },
+  });
+
+  await prisma.menuItem.create({
+    data: {
+      id: "item_mini_idlis",
+      restaurantId: dosaCraft.id,
+      categoryId: catTiffins.id,
+      name: "Ghee Sambar Mini Idlis (14 Pcs)",
+      description: "Bite-sized pillow-soft steamed rice cakes submerged in boiling aromatic spiced shallot-drumstick sambar with melting ghee.",
+      pricePaise: 14900, // Rs 149
+      isVegetarian: true,
+      isAvailable: true,
+      imageUrl: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80",
+      preparationMinutes: 10,
+    },
+  });
+
+  await prisma.menuItem.create({
+    data: {
+      id: "item_filter_coffee",
+      restaurantId: dosaCraft.id,
+      categoryId: catCoffee.id,
+      name: "Madras Degree Filter Coffee",
+      description: "Freshly brewed decoction from plantation Arabica & Peaberry beans, boiled with thick dairy milk and frothed in traditional brass dabarah.",
+      pricePaise: 6500, // Rs 65
+      isVegetarian: true,
+      isAvailable: true,
+      imageUrl: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80",
+      preparationMinutes: 5,
+    },
+  });
+
+  // Restaurant 5: The Burger Foundry (Gourmet Burgers & Shakes)
+  const burgerFoundry = await prisma.restaurant.create({
+    data: {
+      id: "rest_burger_foundry",
+      name: "The Burger Foundry",
+      slug: "the-burger-foundry",
+      description: "Chefs crafting smashed patty perfection, toasted buttery brioche buns, aged cheddar melts, hand-cut loaded crinkle fries, and thick artisan shakes.",
+      fssaiLicense: "11523005001882",
+      phone: "+91 22 2650 7788",
+      email: "hello@burgerfoundry.com",
+      address: "G-Block, Bandra Kurla Complex (BKC)",
+      city: "Mumbai",
+      latitude: 19.0664,
+      longitude: 72.8679,
+      deliveryRadiusKm: 11.0,
+      isOpen: true,
+      isApproved: true,
+      averagePreparationMinutes: 20,
+      commissionPercentage: 15.0,
+      rating: 4.6,
+      reviewCount: 289,
+      imageUrl: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=1200&q=80",
+      cuisineTypes: "Gourmet Burgers, Loaded Fries, American, Shakes",
+    },
+  });
+
+  await prisma.restaurantStaff.create({
+    data: {
+      userId: staffUser5.id,
+      restaurantId: burgerFoundry.id,
+      role: "OWNER",
+    },
+  });
+
+  for (let day = 0; day < 7; day++) {
+    await prisma.operatingHours.create({
+      data: {
+        restaurantId: burgerFoundry.id,
+        dayOfWeek: day,
+        openTime: "11:30",
+        closeTime: "23:59",
+      },
+    });
+  }
+
+  const catBurgers = await prisma.menuCategory.create({
+    data: {
+      restaurantId: burgerFoundry.id,
+      name: "Signature Smash Burgers",
+      displayOrder: 1,
+    },
+  });
+
+  const catFries = await prisma.menuCategory.create({
+    data: {
+      restaurantId: burgerFoundry.id,
+      name: "Loaded Crinkle Fries & Bites",
+      displayOrder: 2,
+    },
+  });
+
+  const catShakes = await prisma.menuCategory.create({
+    data: {
+      restaurantId: burgerFoundry.id,
+      name: "Artisan Thick Shakes",
+      displayOrder: 3,
+    },
+  });
+
+  await prisma.menuItem.create({
+    data: {
+      id: "item_foundry_double",
+      restaurantId: burgerFoundry.id,
+      categoryId: catBurgers.id,
+      name: "The Foundry Double Smash Burger",
+      description: "Two crispy-edged seared chicken patties, double English cheddar, caramelized shallots, house foundry pickles, secret smoke sauce on golden brioche bun.",
+      pricePaise: 38900, // Rs 389
+      isVegetarian: false,
+      isAvailable: true,
+      imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+      preparationMinutes: 18,
+    },
+  });
+
+  await prisma.menuItem.create({
+    data: {
+      id: "item_truffle_mushroom_burger",
+      restaurantId: burgerFoundry.id,
+      categoryId: catBurgers.id,
+      name: "Truffle Portobello Smash Burger",
+      description: "Crispy panko-crusted portobello mushroom patty, melting Swiss cheese, charred sweet onions, and white truffle garlic aioli.",
+      pricePaise: 34900, // Rs 349
+      isVegetarian: true,
+      isAvailable: true,
+      imageUrl: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80",
+      preparationMinutes: 18,
+    },
+  });
+
+  await prisma.menuItem.create({
+    data: {
+      id: "item_periperi_fries",
+      restaurantId: burgerFoundry.id,
+      categoryId: catFries.id,
+      name: "Peri-Peri Cheese Melt Fries",
+      description: "Freshly fried golden crinkle-cut potatoes dusted in zesty African bird's eye spice, drizzled with warm cheddar cheese sauce.",
+      pricePaise: 19900, // Rs 199
+      isVegetarian: true,
+      isAvailable: true,
+      imageUrl: "https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=600&q=80",
+      preparationMinutes: 12,
+    },
+  });
+
+  await prisma.menuItem.create({
+    data: {
+      id: "item_caramel_shake",
+      restaurantId: burgerFoundry.id,
+      categoryId: catShakes.id,
+      name: "Salted Caramel Pretzel Thick Shake",
+      description: "Hand-spun French vanilla ice cream shake infused with burnt butterscotch, Himalayan sea salt caramel, topped with crushed pretzel crunch.",
+      pricePaise: 21900, // Rs 219
+      isVegetarian: true,
+      isAvailable: true,
+      imageUrl: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=600&q=80",
+      preparationMinutes: 8,
+    },
+  });
+
   // 6. Promotional Coupons
   await prisma.coupon.createMany({
     data: [
@@ -660,7 +1080,7 @@ async function main() {
     },
   });
 
-  console.log("Database seeded successfully with 2 restaurants, 7 users, 8 dishes, 3 coupons, and realistic orders!");
+  console.log("Database seeded successfully with 5 culinary restaurants, 10 users, 20+ dishes, 3 coupons, and realistic orders!");
 }
 
 main()
