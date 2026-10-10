@@ -1,0 +1,487 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { formatPaiseToRupees, formatDateTime } from "@/lib/formatters";
+import { useAuth } from "@/context/AuthContext";
+import {
+  ShieldCheck,
+  TrendingUp,
+  Store,
+  Bike,
+  LifeBuoy,
+  FileText,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Download,
+  Search,
+  ExternalLink,
+  RotateCcw,
+} from "lucide-react";
+
+interface AdminData {
+  metrics: {
+    totalOrdersCount: number;
+    grossOrderValuePaise: number;
+    platformCommissionPaise: number;
+    activeOrdersCount: number;
+    statusCounts: Record<string, number>;
+  };
+  restaurants: {
+    id: string;
+    name: string;
+    fssaiLicense: string;
+    city: string;
+    isOpen: boolean;
+    isApproved: boolean;
+    rating: number;
+    _count: { orders: number; menuItems: number };
+  }[];
+  riders: {
+    id: string;
+    userId: string;
+    vehicleType: string;
+    licenseNumber: string;
+    isAvailable: boolean;
+    user: { name: string; phone: string };
+  }[];
+  supportTickets: {
+    id: string;
+    ticketNumber: string;
+    category: string;
+    status: string;
+    priority: string;
+    subject: string;
+    description: string;
+    createdAt: string;
+    user: { name: string; email: string };
+  }[];
+  auditLogs: {
+    id: string;
+    actorRole: string;
+    action: string;
+    resource: string;
+    createdAt: string;
+    metadata?: string;
+  }[];
+}
+
+export default function PlatformAdminDashboard() {
+  const { user } = useAuth();
+  const [data, setData] = useState<AdminData | null>(null);
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "restaurants" | "riders" | "tickets" | "audit"
+  >("overview");
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchAdminData = async () => {
+    try {
+      const res = await fetch("/api/admin/analytics");
+      const json = await res.json();
+      if (json.metrics) {
+        setData(json);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdminData();
+  }, []);
+
+  const handleToggleRestaurantApproval = async (restaurantId: string, currentApproved: boolean) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to ${currentApproved ? "suspend" : "approve"} this restaurant partner?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/restaurants", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ restaurantId, isApproved: !currentApproved }),
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        await fetchAdminData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleResolveTicket = async (ticketId: string) => {
+    const resolution = prompt("Enter resolution notes for customer dispute:", "Issue reviewed and resolved by Ops Administrator.");
+    if (!resolution) return;
+
+    try {
+      const res = await fetch("/api/support", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticketId, status: "RESOLVED", resolution }),
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        await fetchAdminData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const exportFinancialReport = () => {
+    if (!data) return;
+    const content = `METRIC,VALUE
+Total Orders,${data.metrics.totalOrdersCount}
+Gross Order Value (Paise),${data.metrics.grossOrderValuePaise}
+Gross Order Value (INR),${(data.metrics.grossOrderValuePaise / 100).toFixed(2)}
+Platform Commission (INR),${(data.metrics.platformCommissionPaise / 100).toFixed(2)}
+Active Orders,${data.metrics.activeOrdersCount}
+Generated At,${new Date().toISOString()}
+`;
+    const blob = new Blob([content], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `platform_operations_kpi_${Date.now()}.csv`;
+    a.click();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-pulse py-8">
+        <div className="h-8 w-64 bg-neutral-200 dark:bg-neutral-800 rounded" />
+        <div className="grid grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="h-28 bg-neutral-200 dark:bg-neutral-800 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="py-20 text-center">
+        <h2 className="text-xl font-bold">Admin Privileges Required</h2>
+        <p className="text-xs text-neutral-500 mt-1">Switch to the Platform Administrator persona using the top-right role switcher.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 pb-16">
+      {/* Top Banner */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-purple-500/10 dark:bg-purple-950/20 border border-purple-300 dark:border-purple-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-6 h-6 text-purple-600" />
+            <h1 className="text-xl sm:text-2xl font-black text-neutral-900 dark:text-neutral-100">
+              Platform Operations & Governance
+            </h1>
+          </div>
+          <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+            Logged in as Super Admin: <span className="font-bold text-neutral-900 dark:text-neutral-100">{user?.name}</span>
+          </p>
+        </div>
+
+        <button
+          onClick={exportFinancialReport}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-md shadow-purple-600/20"
+        >
+          <Download className="w-3.5 h-3.5" /> Export Financial Report
+        </button>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm">
+          <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wide">
+            Gross Order Value (GOV)
+          </p>
+          <p className="text-2xl font-black text-neutral-900 dark:text-neutral-100 mt-1">
+            {formatPaiseToRupees(data.metrics.grossOrderValuePaise)}
+          </p>
+          <p className="text-[11px] text-emerald-600 font-semibold mt-1">
+            Across {data.metrics.totalOrdersCount} customer orders
+          </p>
+        </div>
+
+        <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm">
+          <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wide">
+            Platform Commission
+          </p>
+          <p className="text-2xl font-black text-purple-600 mt-1">
+            {formatPaiseToRupees(data.metrics.platformCommissionPaise)}
+          </p>
+          <p className="text-[11px] text-neutral-400 mt-1">
+            15% Take-rate + Convenience fees
+          </p>
+        </div>
+
+        <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm">
+          <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wide">
+            Active Deliveries
+          </p>
+          <p className="text-2xl font-black text-orange-600 mt-1">
+            {data.metrics.activeOrdersCount}
+          </p>
+          <p className="text-[11px] text-orange-600 font-semibold mt-1">
+            In-flight / Kitchen prep
+          </p>
+        </div>
+
+        <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm">
+          <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wide">
+            Kitchen Partners
+          </p>
+          <p className="text-2xl font-black text-emerald-600 mt-1">
+            {data.restaurants.length}
+          </p>
+          <p className="text-[11px] text-neutral-400 mt-1">
+            100% FSSAI verified
+          </p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex flex-wrap gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-3">
+        {[
+          { key: "overview", label: "Operations Overview" },
+          { key: "restaurants", label: `Restaurants (${data.restaurants.length})` },
+          { key: "riders", label: `Rider Fleet (${data.riders.length})` },
+          { key: "tickets", label: `Customer Disputes (${data.supportTickets.length})` },
+          { key: "audit", label: `Audit Trail (${data.auditLogs.length})` },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key as any)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === tab.key
+                ? "bg-purple-600 text-white shadow-md shadow-purple-600/20"
+                : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab: Overview (Status breakdown) */}
+      {activeTab === "overview" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm space-y-4">
+            <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+              Orders Status Breakdown
+            </h2>
+            <div className="space-y-3 text-xs">
+              {Object.entries(data.metrics.statusCounts).map(([status, count]) => (
+                <div key={status} className="flex items-center justify-between">
+                  <span className="font-bold text-neutral-700 dark:text-neutral-300">
+                    {status}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 font-mono font-bold">
+                    {count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm space-y-4">
+            <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+              System Health & Gateway Status
+            </h2>
+            <div className="space-y-3 text-xs">
+              <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
+                <span className="font-bold text-emerald-900 dark:text-emerald-200">
+                  Prisma Database (PostgreSQL / SQLite)
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-200 text-emerald-800">
+                  HEALTHY
+                </span>
+              </div>
+              <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
+                <span className="font-bold text-emerald-900 dark:text-emerald-200">
+                  Razorpay Payments Webhook Engine
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-200 text-emerald-800">
+                  ACTIVE
+                </span>
+              </div>
+              <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
+                <span className="font-bold text-emerald-900 dark:text-emerald-200">
+                  Real-time SSE Live GPS Stream
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-200 text-emerald-800">
+                  ONLINE
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Restaurants Management */}
+      {activeTab === "restaurants" && (
+        <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm space-y-4">
+          <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+            Kitchen Partner Verification & FSSAI Compliance
+          </h2>
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {data.restaurants.map((rest) => (
+              <div key={rest.id} className="py-4 flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100">
+                    {rest.name}
+                  </h3>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    FSSAI License: <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">{rest.fssaiLicense}</span> • {rest.city}
+                  </p>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    {rest._count.menuItems} menu dishes • {rest._count.orders} orders processed
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                      rest.isApproved
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {rest.isApproved ? "Approved" : "Suspended"}
+                  </span>
+
+                  <button
+                    onClick={() => handleToggleRestaurantApproval(rest.id, rest.isApproved)}
+                    className="px-3 py-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 text-xs font-bold hover:bg-neutral-100 transition-colors"
+                  >
+                    {rest.isApproved ? "Suspend" : "Approve Partner"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Riders Fleet */}
+      {activeTab === "riders" && (
+        <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm space-y-4">
+          <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+            Registered Delivery Partners
+          </h2>
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {data.riders.map((rider) => (
+              <div key={rider.id} className="py-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100">
+                    {rider.user.name}
+                  </h3>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    {rider.vehicleType} • DL: {rider.licenseNumber} • Phone: {rider.user.phone}
+                  </p>
+                </div>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                    rider.isAvailable
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-neutral-100 text-neutral-600"
+                  }`}
+                >
+                  {rider.isAvailable ? "Online & Ready" : "Offline"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Disputes & Support Tickets */}
+      {activeTab === "tickets" && (
+        <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm space-y-4">
+          <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+            Customer Disputes & Support Tickets
+          </h2>
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {data.supportTickets.map((ticket) => (
+              <div key={ticket.id} className="py-4 flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800">
+                      {ticket.ticketNumber}
+                    </span>
+                    <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                      {ticket.subject}
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.2 rounded ${
+                        ticket.status === "RESOLVED"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-orange-100 text-orange-800"
+                      }`}
+                    >
+                      {ticket.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+                    "{ticket.description}"
+                  </p>
+                  <p className="text-[11px] text-neutral-400 mt-1">
+                    Submitted by: {ticket.user.name} ({ticket.user.email}) • {formatDateTime(ticket.createdAt)}
+                  </p>
+                </div>
+
+                {ticket.status !== "RESOLVED" && (
+                  <button
+                    onClick={() => handleResolveTicket(ticket.id)}
+                    className="px-3.5 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors shadow"
+                  >
+                    Resolve Dispute
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Audit Trail */}
+      {activeTab === "audit" && (
+        <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm space-y-4">
+          <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+            System Security & Operations Audit Logs
+          </h2>
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {data.auditLogs.map((log) => (
+              <div key={log.id} className="py-3 flex items-center justify-between text-xs">
+                <div>
+                  <span className="font-bold text-purple-600">{log.action}</span> on{" "}
+                  <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                    {log.resource}
+                  </span>
+                  {log.metadata && (
+                    <span className="text-neutral-400 font-mono text-[10px] ml-2">
+                      {log.metadata}
+                    </span>
+                  )}
+                </div>
+                <div className="text-right text-neutral-400">
+                  <span className="font-semibold">{log.actorRole}</span> • {formatDateTime(log.createdAt)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
