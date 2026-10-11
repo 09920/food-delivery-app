@@ -21,11 +21,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className={`${inter.className} min-h-full flex flex-col antialiased`}>
+      <body className={`${inter.className} min-h-full flex flex-col antialiased`} suppressHydrationWarning>
         <ClientShell>{children}</ClientShell>
       </body>
     </html>

@@ -17,6 +17,9 @@ import {
   Search,
   ExternalLink,
   RotateCcw,
+  UserPlus,
+  PlusCircle,
+  Sparkles,
 } from "lucide-react";
 
 interface AdminData {
@@ -70,9 +73,108 @@ export default function PlatformAdminDashboard() {
   const { user } = useAuth();
   const [data, setData] = useState<AdminData | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "restaurants" | "riders" | "tickets" | "audit"
+    "overview" | "restaurants" | "riders" | "tickets" | "audit" | "onboarding"
   >("overview");
   const [isLoading, setIsLoading] = useState(true);
+
+  // Manual Onboarding State
+  const [onboardType, setOnboardType] = useState<"restaurant" | "rider" | "user">("restaurant");
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [onboardStatus, setOnboardStatus] = useState<{ message: string; isError: boolean } | null>(null);
+
+  const [restForm, setRestForm] = useState({
+    name: "",
+    cuisineTypes: "North Indian, Biryani, Mughlai",
+    fssaiLicense: "",
+    address: "",
+    city: "Mumbai",
+    phone: "",
+    deliveryRadiusKm: "10",
+    averagePreparationMinutes: "25",
+    ownerEmail: "",
+    ownerName: "",
+  });
+
+  const [riderForm, setRiderForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    vehicleType: "MOTORCYCLE",
+    licenseNumber: "",
+  });
+
+  const [userForm, setUserForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "CUSTOMER",
+  });
+
+  const handleOnboardSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsOnboarding(true);
+    setOnboardStatus(null);
+
+    let payload: any = { type: onboardType };
+    if (onboardType === "restaurant") {
+      payload = { ...payload, ...restForm };
+    } else if (onboardType === "rider") {
+      payload = { ...payload, ...riderForm };
+    } else if (onboardType === "user") {
+      payload = { ...payload, ...userForm };
+    }
+
+    try {
+      const res = await fetch("/api/admin/onboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.error || "Failed to onboard");
+      }
+
+      setOnboardStatus({ message: resData.message || "Successfully created!", isError: false });
+      // Reset forms
+      if (onboardType === "restaurant") {
+        setRestForm({
+          name: "",
+          cuisineTypes: "North Indian, Biryani, Mughlai",
+          fssaiLicense: "",
+          address: "",
+          city: "Mumbai",
+          phone: "",
+          deliveryRadiusKm: "10",
+          averagePreparationMinutes: "25",
+          ownerEmail: "",
+          ownerName: "",
+        });
+      } else if (onboardType === "rider") {
+        setRiderForm({
+          name: "",
+          email: "",
+          phone: "",
+          vehicleType: "MOTORCYCLE",
+          licenseNumber: "",
+        });
+      } else if (onboardType === "user") {
+        setUserForm({
+          name: "",
+          email: "",
+          phone: "",
+          role: "CUSTOMER",
+        });
+      }
+
+      await fetchAdminData();
+    } catch (err: any) {
+      setOnboardStatus({ message: err.message || "Failed to onboard", isError: true });
+    } finally {
+      setIsOnboarding(false);
+    }
+  };
 
   const fetchAdminData = async () => {
     try {
@@ -258,6 +360,7 @@ Generated At,${new Date().toISOString()}
           { key: "riders", label: `Rider Fleet (${data.riders.length})` },
           { key: "tickets", label: `Customer Disputes (${data.supportTickets.length})` },
           { key: "audit", label: `Audit Trail (${data.auditLogs.length})` },
+          { key: "onboarding", label: "✨ Manual Onboard (+ Add)" },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -480,6 +583,374 @@ Generated At,${new Date().toISOString()}
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Tab: Manual Onboarding (Web Interface) */}
+      {activeTab === "onboarding" && (
+        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm space-y-6">
+          <div>
+            <div className="flex items-center space-x-2 text-purple-600 dark:text-purple-400">
+              <Sparkles className="w-5 h-5" />
+              <h2 className="text-lg font-black text-neutral-900 dark:text-neutral-100 tracking-tight">
+                Manual Entity Onboarding Interface
+              </h2>
+            </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+              Add new restaurants, delivery riders, or system users manually straight into the live database.
+            </p>
+          </div>
+
+          {/* Sub-selector */}
+          <div className="flex space-x-2 p-1.5 rounded-2xl bg-neutral-100 dark:bg-neutral-800 max-w-md">
+            <button
+              type="button"
+              onClick={() => {
+                setOnboardType("restaurant");
+                setOnboardStatus(null);
+              }}
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                onboardType === "restaurant"
+                  ? "bg-white dark:bg-neutral-900 text-purple-600 dark:text-purple-300 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200"
+              }`}
+            >
+              + Restaurant Partner
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOnboardType("rider");
+                setOnboardStatus(null);
+              }}
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                onboardType === "rider"
+                  ? "bg-white dark:bg-neutral-900 text-purple-600 dark:text-purple-300 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200"
+              }`}
+            >
+              + Delivery Rider
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOnboardType("user");
+                setOnboardStatus(null);
+              }}
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                onboardType === "user"
+                  ? "bg-white dark:bg-neutral-900 text-purple-600 dark:text-purple-300 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200"
+              }`}
+            >
+              + Any User
+            </button>
+          </div>
+
+          {/* Status Alert */}
+          {onboardStatus && (
+            <div
+              className={`p-4 rounded-2xl border text-xs font-semibold flex items-center space-x-2 ${
+                onboardStatus.isError
+                  ? "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
+                  : "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200"
+              }`}
+            >
+              {onboardStatus.isError ? (
+                <XCircle className="w-4 h-4 text-red-600 shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              )}
+              <span>{onboardStatus.message}</span>
+            </div>
+          )}
+
+          {/* FORM: RESTAURANT */}
+          {onboardType === "restaurant" && (
+            <form onSubmit={handleOnboardSubmit} className="space-y-4 max-w-2xl">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Restaurant Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Bombay Tawa Grill"
+                    value={restForm.name}
+                    onChange={(e) => setRestForm({ ...restForm, name: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Cuisine Types
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Mughlai, Rolls, Street Food"
+                    value={restForm.cuisineTypes}
+                    onChange={(e) => setRestForm({ ...restForm, cuisineTypes: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    FSSAI License
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="14-digit FSSAI (Auto if blank)"
+                    value={restForm.fssaiLicense}
+                    onChange={(e) => setRestForm({ ...restForm, fssaiLicense: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Phone Contact
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="+91 98200 12345"
+                    value={restForm.phone}
+                    onChange={(e) => setRestForm({ ...restForm, phone: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={restForm.city}
+                    onChange={(e) => setRestForm({ ...restForm, city: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                  Full Address
+                </label>
+                <input
+                  type="text"
+                  placeholder="Plot 4, Hill Road, Bandra West"
+                  value={restForm.address}
+                  onChange={(e) => setRestForm({ ...restForm, address: e.target.value })}
+                  className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 space-y-3">
+                <p className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
+                  Optional: Link Kitchen Staff / Owner Account
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-neutral-500 block mb-1">
+                      Staff / Manager Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Ramesh Kulkarni"
+                      value={restForm.ownerName}
+                      onChange={(e) => setRestForm({ ...restForm, ownerName: e.target.value })}
+                      className="w-full py-2 px-3 rounded-lg border border-neutral-300 dark:border-neutral-700 text-xs bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-neutral-500 block mb-1">
+                      Staff Email (for logging into kitchen)
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="ramesh@partner.com"
+                      value={restForm.ownerEmail}
+                      onChange={(e) => setRestForm({ ...restForm, ownerEmail: e.target.value })}
+                      className="w-full py-2 px-3 rounded-lg border border-neutral-300 dark:border-neutral-700 text-xs bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isOnboarding}
+                className="py-3 px-6 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/25 transition-all disabled:opacity-60"
+              >
+                {isOnboarding ? "Onboarding Partner..." : "Create & Launch Restaurant Partner"}
+              </button>
+            </form>
+          )}
+
+          {/* FORM: RIDER */}
+          {onboardType === "rider" && (
+            <form onSubmit={handleOnboardSubmit} className="space-y-4 max-w-2xl">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Rider Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Suraj Shinde"
+                    value={riderForm.name}
+                    onChange={(e) => setRiderForm({ ...riderForm, name: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="suraj.rider@example.com"
+                    value={riderForm.email}
+                    onChange={(e) => setRiderForm({ ...riderForm, email: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="+91 97654 32109"
+                    value={riderForm.phone}
+                    onChange={(e) => setRiderForm({ ...riderForm, phone: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Vehicle Type
+                  </label>
+                  <select
+                    value={riderForm.vehicleType}
+                    onChange={(e) => setRiderForm({ ...riderForm, vehicleType: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value="MOTORCYCLE">Motorcycle</option>
+                    <option value="SCOOTER">Scooter</option>
+                    <option value="EV_BIKE">EV Bike</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Driving License
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="DL-MH-01202399"
+                    value={riderForm.licenseNumber}
+                    onChange={(e) => setRiderForm({ ...riderForm, licenseNumber: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isOnboarding}
+                className="py-3 px-6 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/25 transition-all disabled:opacity-60"
+              >
+                {isOnboarding ? "Onboarding Rider..." : "Add Rider to Fleet"}
+              </button>
+            </form>
+          )}
+
+          {/* FORM: GENERAL USER */}
+          {onboardType === "user" && (
+            <form onSubmit={handleOnboardSubmit} className="space-y-4 max-w-2xl">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Neha Gupta"
+                    value={userForm.name}
+                    onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="neha@example.com"
+                    value={userForm.email}
+                    onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="+91 98989 89898"
+                    value={userForm.phone}
+                    onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
+                    System Role
+                  </label>
+                  <select
+                    value={userForm.role}
+                    onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+                    className="w-full py-2.5 px-3.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value="CUSTOMER">Customer</option>
+                    <option value="RESTAURANT_STAFF">Restaurant Staff</option>
+                    <option value="RIDER">Delivery Rider</option>
+                    <option value="ADMIN">Platform Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isOnboarding}
+                className="py-3 px-6 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/25 transition-all disabled:opacity-60"
+              >
+                {isOnboarding ? "Creating User..." : "Create User"}
+              </button>
+            </form>
+          )}
         </div>
       )}
     </div>
