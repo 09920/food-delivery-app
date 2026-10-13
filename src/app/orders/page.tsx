@@ -11,11 +11,12 @@ interface OrderSummary {
   status: string;
   totalPaise: number;
   createdAt: string;
-  restaurant: {
+  restaurantSnapshot?: string;
+  restaurant?: {
     id: string;
     name: string;
-    imageUrl: string;
-  };
+    imageUrl?: string;
+  } | null;
   items: {
     id: string;
     nameSnapshot: string;
@@ -28,7 +29,7 @@ export default function CustomerOrdersHistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/orders")
+    fetch("/api/orders?role=CUSTOMER")
       .then((res) => res.json())
       .then((data) => {
         if (data.orders) setOrders(data.orders);
@@ -47,6 +48,27 @@ export default function CustomerOrdersHistoryPage() {
       default:
         return "bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300 animate-pulse";
     }
+  };
+
+  const getRestaurantInfo = (order: OrderSummary) => {
+    let name = order.restaurant?.name;
+    const imageUrl =
+      order.restaurant?.imageUrl ||
+      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=256&q=80";
+
+    if (!name && order.restaurantSnapshot) {
+      try {
+        const snap = JSON.parse(order.restaurantSnapshot);
+        name = snap.name;
+      } catch {
+        // Fallback
+      }
+    }
+
+    return {
+      name: name || "Restaurant Kitchen",
+      imageUrl,
+    };
   };
 
   return (
@@ -81,50 +103,57 @@ export default function CustomerOrdersHistoryPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => (
-            <Link
-              key={order.id}
-              href={`/orders/${order.id}`}
-              className="block p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 hover:border-orange-500/50 hover:shadow-lg transition-all group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3.5">
-                  <img
-                    src={order.restaurant.imageUrl}
-                    alt={order.restaurant.name}
-                    className="w-14 h-14 rounded-2xl object-cover bg-neutral-100 flex-shrink-0"
-                  />
-                  <div>
-                    <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover:text-orange-600 transition-colors">
-                      {order.restaurant.name}
-                    </h3>
-                    <p className="text-xs text-neutral-400 mt-0.5">
-                      {formatDateTime(order.createdAt)} • {order.orderNumber}
+          {orders.map((order) => {
+            const restInfo = getRestaurantInfo(order);
+
+            return (
+              <Link
+                key={order.id}
+                href={`/orders/${order.id}`}
+                className="block p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 hover:border-orange-500/50 hover:shadow-lg transition-all group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3.5">
+                    <img
+                      src={restInfo.imageUrl || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=256&q=80"}
+                      alt={restInfo.name}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=256&q=80";
+                      }}
+                      className="w-14 h-14 rounded-2xl object-cover bg-neutral-100 flex-shrink-0"
+                    />
+                    <div>
+                      <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover:text-orange-600 transition-colors">
+                        {restInfo.name}
+                      </h3>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        {formatDateTime(order.createdAt)} • {order.orderNumber}
+                      </p>
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 line-clamp-1">
+                        {order.items.map((i) => `${i.quantity}x ${i.nameSnapshot}`).join(", ")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${getStatusBadge(
+                        order.status
+                      )}`}
+                    >
+                      {order.status.replace("_", " ")}
+                    </span>
+                    <p className="font-black text-sm text-neutral-900 dark:text-neutral-100 mt-1.5">
+                      {formatPaiseToRupees(order.totalPaise)}
                     </p>
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 line-clamp-1">
-                      {order.items.map((i) => `${i.quantity}x ${i.nameSnapshot}`).join(", ")}
-                    </p>
+                    <span className="text-[11px] font-bold text-orange-600 inline-flex items-center gap-0.5 mt-1">
+                      Details <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                    </span>
                   </div>
                 </div>
-
-                <div className="text-right">
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${getStatusBadge(
-                      order.status
-                    )}`}
-                  >
-                    {order.status.replace("_", " ")}
-                  </span>
-                  <p className="font-black text-sm text-neutral-900 dark:text-neutral-100 mt-1.5">
-                    {formatPaiseToRupees(order.totalPaise)}
-                  </p>
-                  <span className="text-[11px] font-bold text-orange-600 inline-flex items-center gap-0.5 mt-1">
-                    Details <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

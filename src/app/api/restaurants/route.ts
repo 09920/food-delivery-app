@@ -24,10 +24,31 @@ export async function GET(req: NextRequest) {
                     some: { name: { contains: query } },
                   },
                 },
+                {
+                  categories: {
+                    some: { name: { contains: query } },
+                  },
+                },
               ],
             }
           : {}),
-        ...(cuisine ? { cuisineTypes: { contains: cuisine } } : {}),
+        ...(cuisine
+          ? {
+              OR: [
+                { cuisineTypes: { contains: cuisine } },
+                {
+                  categories: {
+                    some: { name: { contains: cuisine } },
+                  },
+                },
+                {
+                  menuItems: {
+                    some: { name: { contains: cuisine } },
+                  },
+                },
+              ],
+            }
+          : {}),
         rating: { gte: minRating },
       },
       include: {

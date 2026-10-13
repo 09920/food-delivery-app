@@ -69,6 +69,7 @@ function RestaurantDetailContent() {
   const [restaurant, setRestaurant] = useState<RestaurantData | null>(null);
   const [activeTab, setActiveTab] = useState<"menu" | "reviews">("menu");
   const [vegFilterOnly, setVegFilterOnly] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -113,8 +114,11 @@ function RestaurantDetailContent() {
       {/* Hero Banner */}
       <div className="relative rounded-3xl overflow-hidden bg-neutral-900 text-white shadow-xl">
         <img
-          src={restaurant.imageUrl}
+          src={restaurant.imageUrl || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80"}
           alt={restaurant.name}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80";
+          }}
           className="w-full h-64 sm:h-80 object-cover opacity-60"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
@@ -200,8 +204,46 @@ function RestaurantDetailContent() {
 
       {/* Tab 1: Menu Items by Category */}
       {activeTab === "menu" && (
-        <div className="space-y-10">
-          {restaurant.categories.map((category) => {
+        <div className="space-y-8">
+          {/* Category Filter Pills */}
+          {restaurant.categories.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2 pb-2 overflow-x-auto border-b border-neutral-100 dark:border-neutral-800">
+              <button
+                onClick={() => setSelectedCategoryId(null)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  selectedCategoryId === null
+                    ? "bg-orange-600 text-white shadow-md shadow-orange-600/20"
+                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                }`}
+              >
+                All Categories ({restaurant.categories.reduce((acc, c) => acc + c.menuItems.length, 0)})
+              </button>
+              {restaurant.categories.map((cat) => {
+                const count = vegFilterOnly
+                  ? cat.menuItems.filter((i) => i.isVegetarian).length
+                  : cat.menuItems.length;
+                const isSelected = selectedCategoryId === cat.id;
+
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategoryId(isSelected ? null : cat.id)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                      isSelected
+                        ? "bg-orange-600 text-white shadow-md shadow-orange-600/20"
+                        : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                    }`}
+                  >
+                    {cat.name} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {restaurant.categories
+            .filter((cat) => !selectedCategoryId || cat.id === selectedCategoryId)
+            .map((category) => {
             const filteredItems = vegFilterOnly
               ? category.menuItems.filter((i) => i.isVegetarian)
               : category.menuItems;
@@ -263,8 +305,11 @@ function RestaurantDetailContent() {
                         {/* Food image & Add to cart button */}
                         <div className="relative w-28 h-28 flex-shrink-0 flex flex-col items-center justify-end">
                           <img
-                            src={item.imageUrl}
+                            src={item.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80"}
                             alt={item.name}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80";
+                            }}
                             className="w-full h-full object-cover rounded-xl shadow-inner bg-neutral-100"
                           />
 

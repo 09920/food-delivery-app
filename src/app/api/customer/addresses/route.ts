@@ -62,3 +62,110 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getSessionUser();
+    const { searchParams } = new URL(req.url);
+    let id = searchParams.get("id");
+
+    if (!id) {
+      try {
+        const body = await req.json();
+        id = body?.id;
+      } catch {
+        // Ignore if no body
+      }
+    }
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Address ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const existing = await prisma.customerAddress.findFirst({
+      where: { id, userId: user.id },
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Address not found or unauthorized" },
+        { status: 404 }
+      );
+    }
+
+    await prisma.customerAddress.delete({
+      where: { id },
+    });
+
+    // If deleted address was default, promote the newest remaining address as default
+    if (existing.isDefault) {
+      const nextDefault = await prisma.customerAddress.findFirst({
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+      });
+      if (nextDefault) {
+        await prisma.customerAddress.update({
+          where: { id: nextDefault.id },
+          data: { isDefault: true },
+        });
+      }
+    }
+
+    return NextResponse.json({ success: true, message: "Address deleted successfully" });
+  } catch (error) {
+    return NextResponse.json(
+      { error: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const user = await getSessionUser();
+    const body = await req.json();
+    const { id, isDefault } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Address ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const existing = await prisma.customerAddress.findFirst({
+      where: { id, userId: user.id },
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Address not found or unauthorized" },
+        { status: 404 }
+      );
+    }
+
+    if (isDefault) {
+      await prisma.customerAddress.updateMany({
+        where: { userId: user.id },
+        data: { isDefault: false },
+      });
+
+      const updated = await prisma.customerAddress.update({
+        where: { id },
+        data: { isDefault: true },
+      });
+
+      return NextResponse.json({ success: true, address: updated });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}

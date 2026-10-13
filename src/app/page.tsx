@@ -14,6 +14,8 @@ import {
   Flame,
   ShieldCheck,
   Heart,
+  Utensils,
+  Layers,
 } from "lucide-react";
 
 interface Restaurant {
@@ -29,6 +31,7 @@ interface Restaurant {
   address: string;
   isOpen: boolean;
   categories: {
+    id: string;
     name: string;
     menuItems: { id: string; name: string; pricePaise: number; isVegetarian: boolean }[];
   }[];
@@ -101,14 +104,36 @@ export default function HomePage() {
     }
   };
 
+  const categoriesShowcase = [
+    { name: "Biryani & Kebabs", cuisine: "Biryani", icon: "🍗", desc: "Dum Biryani & Tandoor" },
+    { name: "Artisan Pizza", cuisine: "Pizza", icon: "🍕", desc: "Woodfired Neapolitan" },
+    { name: "Craft Burgers", cuisine: "Gourmet Burgers", icon: "🍔", desc: "Brioche Smashed" },
+    { name: "Sushi & Ramen", cuisine: "Sushi", icon: "🍣", desc: "Tokyo Craft Nigiri" },
+    { name: "Mexican Tacos", cuisine: "Mexican", icon: "🌮", desc: "Birria & Street Tacos" },
+    { name: "Shawarma & Mezze", cuisine: "Lebanese", icon: "🥙", desc: "Toum & Charcoal Grills" },
+    { name: "Crispy Dosas", cuisine: "South Indian", icon: "🥞", desc: "Ghee Roast & Tiffins" },
+    { name: "Dim Sum & Wok", cuisine: "Pan-Asian", icon: "🥟", desc: "Har Gao & Noodles" },
+    { name: "French Bakery", cuisine: "Bakery", icon: "🥐", desc: "Croissants & Patisserie" },
+    { name: "Superfood Bowls", cuisine: "Healthy", icon: "🥗", desc: "Quinoa, Salads & Acai" },
+    { name: "Mumbai Chaat", cuisine: "Street Food", icon: "🥘", desc: "Pav Bhaji & Sev Puri" },
+    { name: "Coastal Seafood", cuisine: "Seafood", icon: "🦐", desc: "Goan Curry & Tawa Fry" },
+  ];
+
   const cuisinesList = [
     "North Indian",
     "Biryani",
     "Italian",
-    "South Indian",
     "Gourmet Burgers",
+    "Japanese",
+    "Sushi",
+    "Mexican",
+    "Lebanese",
+    "South Indian",
     "Pan-Asian",
-    "Dim Sum",
+    "Bakery",
+    "Healthy",
+    "Street Food",
+    "Seafood",
   ];
 
   return (
@@ -124,7 +149,7 @@ export default function HomePage() {
             Craving something delicious today?
           </h1>
           <p className="text-orange-100 text-sm sm:text-base max-w-xl">
-            Order from top FSSAI-certified kitchen partners in Mumbai. Real-time GPS rider tracking, doorstep OTP verification, and instant online payments.
+            Order from 12+ top FSSAI-certified kitchen partners across Mumbai. Explore artisanal sushi, woodfired pizzas, street tacos, slow-dum biryanis, superfood bowls, and fresh French bakery items.
           </p>
 
           {/* Search Bar */}
@@ -135,7 +160,7 @@ export default function HomePage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search restaurants, dishes (e.g. Biryani, Tikka, Dumplings)..."
+                placeholder="Search restaurants, cuisines, or dishes (e.g. Sushi, Biryani, Tacos, Ramen, Pizza, Shawarma, Acai)..."
                 className="w-full px-4 py-3.5 text-sm outline-none placeholder-neutral-400 font-medium"
               />
               {searchQuery && (
@@ -153,6 +178,55 @@ export default function HomePage() {
         {/* Decorative backdrop elements */}
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent pointer-events-none" />
       </div>
+
+      {/* Popular Food Categories Showcase */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg sm:text-xl font-black tracking-tight text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+            <Utensils className="w-5 h-5 text-orange-600" />
+            <span>Popular Food Categories</span>
+          </h2>
+          {selectedCuisine && (
+            <button
+              onClick={() => setSelectedCuisine(null)}
+              className="text-xs font-bold text-orange-600 hover:text-orange-700 underline"
+            >
+              Clear Category Filter
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {categoriesShowcase.map((cat) => {
+            const isSelected = selectedCuisine === cat.cuisine;
+            return (
+              <button
+                key={cat.name}
+                onClick={() => setSelectedCuisine(isSelected ? null : cat.cuisine)}
+                className={`p-3.5 rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between ${
+                  isSelected
+                    ? "bg-orange-600 border-orange-600 text-white shadow-lg shadow-orange-600/30 scale-102"
+                    : "bg-white dark:bg-neutral-900 border-neutral-200/80 dark:border-neutral-800 hover:border-orange-300 dark:hover:border-neutral-700 hover:shadow-md text-neutral-900 dark:text-neutral-100"
+                }`}
+              >
+                <div className="text-2xl mb-2">{cat.icon}</div>
+                <div>
+                  <h3 className={`text-xs font-bold leading-tight ${isSelected ? "text-white" : ""}`}>
+                    {cat.name}
+                  </h3>
+                  <p
+                    className={`text-[10px] mt-0.5 line-clamp-1 ${
+                      isSelected ? "text-orange-100" : "text-neutral-500 dark:text-neutral-400"
+                    }`}
+                  >
+                    {cat.desc}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Filter Chips Bar */}
       <div className="flex flex-wrap items-center gap-2 pt-1 pb-2 overflow-x-auto">
@@ -209,14 +283,19 @@ export default function HomePage() {
               {restaurants.length} kitchens
             </span>
           </h2>
+          {selectedCuisine && (
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300">
+              Filtered by: {selectedCuisine}
+            </span>
+          )}
         </div>
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((n) => (
+            {[1, 2, 3, 4, 5, 6].map((n) => (
               <div
                 key={n}
-                className="h-72 rounded-3xl bg-neutral-200 dark:bg-neutral-800 animate-pulse"
+                className="h-80 rounded-3xl bg-neutral-200 dark:bg-neutral-800 animate-pulse"
               />
             ))}
           </div>
@@ -244,6 +323,12 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {restaurants.map((restaurant) => {
               const isFav = favorites.includes(restaurant.id);
+              const popularDishes = restaurant.categories
+                ? restaurant.categories
+                    .flatMap((c) => c.menuItems.map((m) => m.name))
+                    .slice(0, 3)
+                : [];
+
               return (
                 <Link
                   key={restaurant.id}
@@ -253,8 +338,11 @@ export default function HomePage() {
                   {/* Restaurant Cover Image */}
                   <div className="relative h-48 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                     <img
-                      src={restaurant.imageUrl}
+                      src={restaurant.imageUrl || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80"}
                       alt={restaurant.name}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80";
+                      }}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
@@ -311,13 +399,41 @@ export default function HomePage() {
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-1">
                         {restaurant.cuisineTypes}
                       </p>
+
                       <p className="text-xs text-neutral-400 flex items-center gap-1 mt-1.5">
                         <MapPin className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate">{restaurant.address}</span>
                       </p>
+
+                      {/* Category Pills */}
+                      {restaurant.categories && restaurant.categories.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {restaurant.categories.slice(0, 3).map((cat) => (
+                            <span
+                              key={cat.id || cat.name}
+                              className="px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-[10px] font-medium"
+                            >
+                              {cat.name}
+                            </span>
+                          ))}
+                          {restaurant.categories.length > 3 && (
+                            <span className="px-1.5 py-0.5 rounded-md bg-neutral-50 dark:bg-neutral-850 text-neutral-400 text-[10px] font-medium">
+                              +{restaurant.categories.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Featured Dishes Preview */}
+                      {popularDishes.length > 0 && (
+                        <p className="mt-2.5 text-[11px] text-neutral-500 dark:text-neutral-400 line-clamp-1">
+                          <span className="font-semibold text-neutral-700 dark:text-neutral-300">Dishes: </span>
+                          {popularDishes.join(" • ")}
+                        </p>
+                      )}
                     </div>
 
-                    {/* Popular Dishes Preview */}
+                    {/* View Menu & Order CTA */}
                     <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-semibold text-orange-600 dark:text-orange-400">
                       <span>View Menu & Order</span>
                       <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

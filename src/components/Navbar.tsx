@@ -156,7 +156,8 @@ export default function Navbar({ onOpenCart }: NavbarProps) {
           </div>
 
           {/* Right Section: Persona Switcher & Cart */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+
             {/* Persona Switcher Dropdown */}
             <div className="relative">
               <button

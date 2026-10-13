@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       orders = await prisma.order.findMany({
         include: {
           customer: { select: { id: true, name: true, phone: true } },
-          restaurant: { select: { id: true, name: true, phone: true } },
+          restaurant: { select: { id: true, name: true, phone: true, imageUrl: true } },
           rider: { select: { id: true, name: true, phone: true } },
           items: true,
           payments: true,
@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
         where: { restaurantId },
         include: {
           customer: { select: { id: true, name: true, phone: true } },
+          restaurant: { select: { id: true, name: true, phone: true, imageUrl: true } },
           rider: { select: { id: true, name: true, phone: true } },
           items: true,
           statusHistory: { orderBy: { createdAt: "asc" } },
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
         where: { riderId: user.id },
         include: {
           customer: { select: { id: true, name: true, phone: true } },
-          restaurant: { select: { id: true, name: true, phone: true, address: true } },
+          restaurant: { select: { id: true, name: true, phone: true, address: true, imageUrl: true } },
           items: true,
           statusHistory: { orderBy: { createdAt: "asc" } },
         },

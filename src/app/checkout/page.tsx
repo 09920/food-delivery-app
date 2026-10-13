@@ -15,6 +15,7 @@ import {
   Plus,
   ArrowRight,
   Lock,
+  Trash2,
 } from "lucide-react";
 
 interface SavedAddress {
@@ -86,6 +87,29 @@ export default function CheckoutPage() {
         setIsAddingNewAddr(false);
         setNewAddressLine("");
         setNewLandmark("");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteAddress = async (e: React.MouseEvent, addressId: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!confirm("Are you sure you want to delete this address?")) return;
+
+    try {
+      const res = await fetch(`/api/customer/addresses?id=${encodeURIComponent(addressId)}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setAddresses((prev) => {
+          const updated = prev.filter((a) => a.id !== addressId);
+          if (selectedAddressId === addressId) {
+            setSelectedAddressId(updated.length > 0 ? updated[0].id : "");
+          }
+          return updated;
+        });
       }
     } catch (err) {
       console.error(err);
@@ -287,6 +311,14 @@ export default function CheckoutPage() {
                           </p>
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteAddress(e, addr.id)}
+                        className="p-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors ml-2"
+                        title="Delete address"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </label>
                 );
