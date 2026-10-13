@@ -92,10 +92,6 @@ export async function transitionOrderStatus({
       throw new Error("Maximum OTP attempts exceeded. Please contact platform support.");
     }
 
-    if (order.deliveryOtpExpiresAt && new Date() > order.deliveryOtpExpiresAt) {
-      throw new Error("Delivery OTP has expired");
-    }
-
     if (order.deliveryOtpHash && order.deliveryOtpHash !== verificationOtp.trim()) {
       await prisma.order.update({
         where: { id: orderId },

@@ -5,25 +5,8 @@ import prisma from "@/lib/db";
 
 export async function GET() {
   const user = await getSessionUser();
-  const allUsers = await prisma.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      avatarUrl: true,
-      restaurantStaff: {
-        select: {
-          restaurant: { select: { id: true, name: true } },
-        },
-      },
-    },
-  });
-
   return NextResponse.json({
-    user,
-    availablePersonas: allUsers,
-    demoPresets: DEMO_USERS,
+    user: user || null,
   });
 }
 

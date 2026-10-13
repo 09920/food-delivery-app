@@ -5,6 +5,9 @@ import { getSessionUser } from "@/lib/auth";
 export async function GET() {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Rider authentication required" }, { status: 401 });
+    }
 
     let profile = await prisma.riderProfile.findUnique({
       where: { userId: user.id },
@@ -23,11 +26,26 @@ export async function GET() {
       });
     }
 
-    // Active orders assigned to this rider
+    // Auto-cancel and remove stale orders older than 6 hours
+    const staleThreshold = new Date(Date.now() - 6 * 60 * 60 * 1000);
+    await prisma.order.updateMany({
+      where: {
+        status: { in: ["READY", "PICKED_UP", "PLACED", "ACCEPTED", "PREPARING"] },
+        createdAt: { lt: staleThreshold },
+      },
+      data: {
+        status: "CANCELLED",
+        cancellationReason: "Auto-cancelled: Order expired due to extended delay",
+        cancelledByRole: "SYSTEM",
+      },
+    });
+
+    // Active orders assigned to this rider (only non-stale active orders)
     const activeOrders = await prisma.order.findMany({
       where: {
         riderId: user.id,
         status: { in: ["READY", "PICKED_UP"] },
+        createdAt: { gte: staleThreshold },
       },
       include: {
         customer: { select: { id: true, name: true, phone: true } },
@@ -66,6 +84,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Rider authentication required" }, { status: 401 });
+    }
     const body = await req.json();
     const { isAvailable } = body;
 

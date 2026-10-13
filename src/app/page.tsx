@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
+import { formatPaiseToRupees } from "@/lib/formatters";
 import {
   Search,
   Star,
@@ -16,6 +17,12 @@ import {
   Heart,
   Utensils,
   Layers,
+  ArrowRight,
+  Store,
+  Zap,
+  Tag,
+  Percent,
+  ArrowUpRight,
 } from "lucide-react";
 
 interface Restaurant {
@@ -40,16 +47,71 @@ interface Restaurant {
 export default function HomePage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const [selectedCuisine, setSelectedCuisine] = useState<string | null>(null);
   const [vegOnly, setVegOnly] = useState(false);
   const [minRating, setMinRating] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
+
+  const handleCopyCoupon = (code: string) => {
+    navigator.clipboard?.writeText(code);
+    setCopiedCoupon(code);
+    setTimeout(() => setCopiedCoupon(null), 2500);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     fetchRestaurants();
     fetchFavorites();
   }, [searchQuery, selectedCuisine, vegOnly, minRating]);
+
+  // Extract matching dishes from currently loaded restaurants
+  const matchingDishes = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase().trim();
+    const dishes: {
+      id: string;
+      name: string;
+      pricePaise: number;
+      isVegetarian: boolean;
+      restaurantId: string;
+      restaurantName: string;
+    }[] = [];
+
+    for (const rest of restaurants) {
+      for (const cat of rest.categories || []) {
+        for (const item of cat.menuItems || []) {
+          if (
+            item.name.toLowerCase().includes(q) ||
+            cat.name.toLowerCase().includes(q)
+          ) {
+            dishes.push({
+              id: item.id,
+              name: item.name,
+              pricePaise: item.pricePaise,
+              isVegetarian: item.isVegetarian,
+              restaurantId: rest.id,
+              restaurantName: rest.name,
+            });
+            if (dishes.length >= 6) return dishes;
+          }
+        }
+      }
+    }
+    return dishes;
+  }, [restaurants, searchQuery]);
 
   const fetchRestaurants = async () => {
     setIsLoading(true);
@@ -138,33 +200,55 @@ export default function HomePage() {
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Hero Banner with Modern Gradient */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-orange-600 via-amber-600 to-red-600 text-white p-8 sm:p-12 shadow-2xl shadow-orange-500/20">
-        <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold tracking-wide uppercase">
-            <Sparkles className="w-3.5 h-3.5" />
-            Flavors delivered in under 30 minutes
-          </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-            Craving something delicious today?
-          </h1>
-          <p className="text-orange-100 text-sm sm:text-base max-w-xl">
-            Order from 12+ top FSSAI-certified kitchen partners across Mumbai. Explore artisanal sushi, woodfired pizzas, street tacos, slow-dum biryanis, superfood bowls, and fresh French bakery items.
-          </p>
+      {/* Modern High-Conversion Culinary Hero Section */}
+      <div className="relative rounded-3xl bg-gradient-to-br from-orange-600 via-amber-600 to-red-600 text-white p-6 sm:p-10 lg:p-12 shadow-2xl shadow-orange-500/25 overflow-visible">
+        {/* Ambient decorative overlays */}
+        <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+          <div className="absolute -right-20 -top-20 w-96 h-96 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute right-1/4 -bottom-20 w-80 h-80 rounded-full bg-amber-400/20 blur-2xl" />
+        </div>
 
-          {/* Search Bar */}
-          <div className="pt-2">
-            <div className="relative flex items-center bg-white rounded-2xl shadow-xl overflow-hidden text-neutral-900">
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+          {/* Left Column: Headlines & Search */}
+          <div className="lg:col-span-7 space-y-5">
+            {/* Urgent Coupon / Announcement Pill */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/20 backdrop-blur-md border border-white/20 text-xs font-bold tracking-wide">
+              <Flame className="w-4 h-4 text-amber-300 animate-pulse" />
+              <span>
+                FLAT 50% OFF • USE CODE <button type="button" onClick={() => handleCopyCoupon("WELCOME50")} className="underline decoration-amber-300 font-extrabold hover:text-amber-200">WELCOME50</button>
+              </span>
+              {copiedCoupon === "WELCOME50" && (
+                <span className="ml-1 bg-emerald-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">COPIED!</span>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <h1 className="text-3xl sm:text-5xl lg:text-5xl font-black tracking-tight leading-[1.15]">
+                Craving delicious food in Mumbai?
+              </h1>
+              <p className="text-orange-100 text-sm sm:text-base max-w-xl leading-relaxed">
+                Order authentic slow-dum biryanis, woodfired pizzas, smashed brioche burgers, sushi, & street chaat — delivered steaming hot in under 30 minutes.
+              </p>
+            </div>
+
+          {/* Search Bar with Instant Predictive Dropdown */}
+          <div ref={searchContainerRef} className="pt-2 relative z-30">
+            <div className="relative flex items-center bg-white rounded-2xl shadow-xl overflow-hidden text-neutral-900 border-2 border-transparent focus-within:border-amber-400 transition-all">
               <Search className="w-5 h-5 ml-4 text-neutral-400 flex-shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search restaurants, cuisines, or dishes (e.g. Sushi, Biryani, Tacos, Ramen, Pizza, Shawarma, Acai)..."
-                className="w-full px-4 py-3.5 text-sm outline-none placeholder-neutral-400 font-medium"
+                onFocus={() => setIsSearchFocused(true)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchFocused(true);
+                }}
+                placeholder="Search restaurants, cuisines, or dishes (e.g. Biryani, Pizza, Burger, Sushi, Tacos)..."
+                className="w-full px-4 py-3.5 text-sm outline-none placeholder-neutral-400 font-medium bg-transparent"
               />
               {searchQuery && (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery("")}
                   className="mr-3 text-xs font-bold text-neutral-400 hover:text-neutral-700 px-2 py-1"
                 >
@@ -172,46 +256,341 @@ export default function HomePage() {
                 </button>
               )}
             </div>
+
+            {/* Instant Floating Dropdown (Swiggy / Zomato style) */}
+            {searchQuery.trim().length > 0 && isSearchFocused && (
+              <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-800 z-50 overflow-hidden divide-y divide-neutral-100 dark:divide-neutral-800 text-neutral-900 dark:text-neutral-100 animate-in fade-in zoom-in-95 duration-100 max-h-96 overflow-y-auto">
+                <div className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-850 flex items-center justify-between text-xs font-bold text-neutral-500">
+                  <span>Results for &ldquo;{searchQuery}&rdquo;</span>
+                  <span>{matchingDishes.length + restaurants.length} matches</span>
+                </div>
+
+                {/* Matching Dishes */}
+                {matchingDishes.length > 0 && (
+                  <div className="p-2">
+                    <p className="px-2 pt-1 pb-1 text-[10px] font-black uppercase tracking-wider text-orange-600 dark:text-orange-400">
+                      Dishes & Items
+                    </p>
+                    <div className="space-y-0.5">
+                      {matchingDishes.map((dish) => (
+                        <Link
+                          key={`${dish.restaurantId}-${dish.id}`}
+                          href={`/restaurants/${dish.restaurantId}`}
+                          onClick={() => setIsSearchFocused(false)}
+                          className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors group"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className={`w-3.5 h-3.5 flex-shrink-0 rounded border flex items-center justify-center ${
+                                dish.isVegetarian ? "border-green-600" : "border-red-600"
+                              }`}
+                            >
+                              <div
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  dish.isVegetarian ? "bg-green-600" : "bg-red-600"
+                                }`}
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-orange-600 transition-colors truncate">
+                                {dish.name}
+                              </p>
+                              <p className="text-[10px] text-neutral-500 truncate">
+                                at {dish.restaurantName}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-xs font-black text-neutral-800 dark:text-neutral-200 ml-3">
+                            {formatPaiseToRupees(dish.pricePaise)}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Matching Restaurants */}
+                {restaurants.length > 0 && (
+                  <div className="p-2">
+                    <p className="px-2 pt-1 pb-1 text-[10px] font-black uppercase tracking-wider text-orange-600 dark:text-orange-400">
+                      Restaurants
+                    </p>
+                    <div className="space-y-0.5">
+                      {restaurants.slice(0, 4).map((rest) => (
+                        <Link
+                          key={rest.id}
+                          href={`/restaurants/${rest.id}`}
+                          onClick={() => setIsSearchFocused(false)}
+                          className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors group"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg overflow-hidden bg-neutral-200 flex-shrink-0">
+                              <img
+                                src={rest.imageUrl}
+                                alt={rest.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-orange-600 transition-colors truncate">
+                                {rest.name}
+                              </p>
+                              <p className="text-[10px] text-neutral-500 truncate">
+                                {rest.cuisineTypes}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                            <Star className="w-3 h-3 fill-current" />
+                            <span>{rest.rating}</span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Bottom Smooth Scroll Trigger */}
+                <div className="p-2 bg-neutral-50 dark:bg-neutral-850 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSearchFocused(false);
+                      document.getElementById("restaurants-grid")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center justify-center gap-1 mx-auto"
+                  >
+                    <span>View all {restaurants.length} matching restaurants below</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+            {/* Quick Keyword Suggestion Chips */}
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="text-orange-200 font-semibold mr-1">Trending:</span>
+              {["Biryani", "Pizza", "Burger", "Sushi", "Tacos", "Dosa"].map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery(tag);
+                    setIsSearchFocused(true);
+                  }}
+                  className="px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 backdrop-blur-md text-white font-medium text-[11px] transition-all cursor-pointer"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+
+            {/* Social Proof & Trust Badges */}
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-2 text-xs text-orange-100 font-medium">
+              <div className="flex items-center gap-1.5">
+                <Star className="w-4 h-4 text-amber-300 fill-amber-300" />
+                <span><strong className="text-white font-bold">4.8+</strong> (25k+ Reviews)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-amber-300" />
+                <span><strong className="text-white font-bold">25 Mins</strong> Avg Doorstep ETA</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-amber-300" />
+                <span><strong className="text-white font-bold">FSSAI</strong> Certified Kitchens</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Culinary Spotlight Visual Card */}
+          <div className="hidden lg:flex lg:col-span-5 relative justify-center">
+            {/* Floating Live Express Badge */}
+            <div className="absolute -top-3 -right-2 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900/90 backdrop-blur-md border border-neutral-700/80 text-white text-xs font-bold shadow-2xl">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>⚡ 24 min Express ETA</span>
+            </div>
+
+            {/* Glassmorphic Chef's Spotlight Showcase */}
+            <div className="w-full bg-white/15 dark:bg-black/35 backdrop-blur-xl border border-white/25 rounded-3xl p-5 shadow-2xl space-y-3.5">
+              <div className="flex items-center justify-between border-b border-white/15 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span className="font-extrabold text-sm tracking-tight text-white">
+                    Chef&apos;s Signature Spotlight
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white">
+                  MUMBAI TOP PICKS
+                </span>
+              </div>
+
+              {/* Spotlight Items */}
+              <div className="space-y-2">
+                {[
+                  { name: "Royal Awadhi Dum Biryani", rest: "Behrouz Handi", price: "₹380", rating: "4.9", emoji: "🍗" },
+                  { name: "Truffle Burrata Woodfired Pizza", rest: "La Pino'z Gourmet", price: "₹420", rating: "4.8", emoji: "🍕" },
+                  { name: "Double Smashed Wagyu Burger", rest: "Burger Loft", price: "₹320", rating: "4.9", emoji: "🍔" },
+                  { name: "Crunchy Salmon Nigiri & Maki", rest: "Tokyo Dining", price: "₹490", rating: "4.8", emoji: "🍣" },
+                ].map((item) => (
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 transition-all border border-white/10 text-white"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-lg">
+                        {item.emoji}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold leading-tight">{item.name}</p>
+                        <p className="text-[10px] text-orange-200">{item.rest}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-extrabold">{item.price}</p>
+                      <p className="text-[10px] font-bold text-amber-300 flex items-center justify-end gap-0.5">
+                        <Star className="w-2.5 h-2.5 fill-current" />
+                        {item.rating}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom Promo Note */}
+              <div className="pt-1 flex items-center justify-between text-[11px] text-orange-100 font-semibold">
+                <span className="flex items-center gap-1">
+                  <Tag className="w-3 h-3 text-amber-300" />
+                  Code: <strong className="text-white">FREEDEL</strong> for Free Delivery
+                </span>
+                <button
+                  type="button"
+                  className="text-white font-bold underline cursor-pointer"
+                  onClick={() => handleCopyCoupon("FREEDEL")}
+                >
+                  {copiedCoupon === "FREEDEL" ? "Copied!" : "Copy Code"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Decorative backdrop elements */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent pointer-events-none" />
       </div>
 
-      {/* Popular Food Categories Showcase */}
-      <section className="space-y-3">
+      {/* Interactive Promotional Offers Strip */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          {
+            code: "WELCOME50",
+            title: "50% OFF Up to ₹120",
+            desc: "On your first meal order today",
+            bg: "from-amber-500/10 to-orange-500/10 border-orange-200 dark:border-orange-900/50",
+            iconColor: "text-orange-500",
+            icon: Tag,
+          },
+          {
+            code: "FREEDEL",
+            title: "Zero ₹0 Delivery Fee",
+            desc: "On all orders above ₹199",
+            bg: "from-emerald-500/10 to-teal-500/10 border-emerald-200 dark:border-emerald-900/50",
+            iconColor: "text-emerald-500",
+            icon: Zap,
+          },
+          {
+            code: "GOURMET20",
+            title: "Flat ₹100 Gourmet Off",
+            desc: "On top fine-dining partners",
+            bg: "from-purple-500/10 to-indigo-500/10 border-purple-200 dark:border-purple-900/50",
+            iconColor: "text-purple-500",
+            icon: Sparkles,
+          },
+          {
+            code: "HEALTHY15",
+            title: "15% Healthy Cashback",
+            desc: "On superfood bowls & salads",
+            bg: "from-green-500/10 to-lime-500/10 border-green-200 dark:border-green-900/50",
+            iconColor: "text-green-500",
+            icon: Percent,
+          },
+        ].map((deal) => {
+          const Icon = deal.icon;
+          const isCopied = copiedCoupon === deal.code;
+          return (
+            <div
+              key={deal.code}
+              className={`p-3.5 rounded-2xl border bg-gradient-to-br ${deal.bg} bg-white dark:bg-neutral-900 flex items-center justify-between gap-3 shadow-xs hover:shadow-md transition-all group`}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-9 h-9 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0 ${deal.iconColor}`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs font-bold text-neutral-900 dark:text-neutral-100 truncate">
+                    {deal.title}
+                  </h4>
+                  <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">
+                    {deal.desc}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCopyCoupon(deal.code)}
+                className="px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-orange-500 bg-neutral-50 dark:bg-neutral-800 text-[10px] font-black text-neutral-700 dark:text-neutral-300 hover:text-orange-600 transition-colors flex-shrink-0 cursor-pointer"
+              >
+                {isCopied ? "COPIED" : deal.code}
+              </button>
+            </div>
+          );
+        })}
+      </section>
+
+      {/* Popular Food Categories Showcase (Swiggy / Zomato Circular Dish Cards) */}
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-black tracking-tight text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
-            <Utensils className="w-5 h-5 text-orange-600" />
-            <span>Popular Food Categories</span>
-          </h2>
+          <div>
+            <h2 className="text-lg sm:text-xl font-black tracking-tight text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+              <Utensils className="w-5 h-5 text-orange-600" />
+              <span>What&apos;s on your mind?</span>
+            </h2>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+              Explore Mumbai&apos;s favorite food categories and cuisines
+            </p>
+          </div>
           {selectedCuisine && (
             <button
               onClick={() => setSelectedCuisine(null)}
-              className="text-xs font-bold text-orange-600 hover:text-orange-700 underline"
+              className="text-xs font-bold text-orange-600 hover:text-orange-700 underline cursor-pointer"
             >
-              Clear Category Filter
+              Clear Filter
             </button>
           )}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
           {categoriesShowcase.map((cat) => {
             const isSelected = selectedCuisine === cat.cuisine;
             return (
               <button
                 key={cat.name}
                 onClick={() => setSelectedCuisine(isSelected ? null : cat.cuisine)}
-                className={`p-3.5 rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between ${
+                className={`p-4 rounded-3xl border text-center transition-all duration-200 flex flex-col items-center justify-between group cursor-pointer ${
                   isSelected
-                    ? "bg-orange-600 border-orange-600 text-white shadow-lg shadow-orange-600/30 scale-102"
-                    : "bg-white dark:bg-neutral-900 border-neutral-200/80 dark:border-neutral-800 hover:border-orange-300 dark:hover:border-neutral-700 hover:shadow-md text-neutral-900 dark:text-neutral-100"
+                    ? "bg-orange-600 border-orange-600 text-white shadow-xl shadow-orange-600/30 scale-105"
+                    : "bg-white dark:bg-neutral-900/90 border-neutral-200/80 dark:border-neutral-800 hover:border-orange-400 dark:hover:border-neutral-700 hover:shadow-lg hover:-translate-y-1 text-neutral-900 dark:text-neutral-100"
                 }`}
               >
-                <div className="text-2xl mb-2">{cat.icon}</div>
+                {/* Circular Dish Badge */}
+                <div
+                  className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl mb-2.5 transition-transform group-hover:scale-110 duration-200 shadow-inner ${
+                    isSelected
+                      ? "bg-white/20 text-white"
+                      : "bg-gradient-to-tr from-amber-500/15 via-orange-500/10 to-red-500/15 border border-orange-500/20"
+                  }`}
+                >
+                  {cat.icon}
+                </div>
                 <div>
-                  <h3 className={`text-xs font-bold leading-tight ${isSelected ? "text-white" : ""}`}>
+                  <h3 className={`text-xs font-extrabold leading-tight ${isSelected ? "text-white" : ""}`}>
                     {cat.name}
                   </h3>
                   <p
@@ -275,7 +654,7 @@ export default function HomePage() {
       </div>
 
       {/* Restaurant List Section */}
-      <section className="space-y-4">
+      <section id="restaurants-grid" className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
             <span>Explore Restaurants</span>

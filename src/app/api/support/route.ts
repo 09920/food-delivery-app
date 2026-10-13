@@ -5,6 +5,9 @@ import { getSessionUser } from "@/lib/auth";
 export async function GET(req: NextRequest) {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ tickets: [] });
+    }
     const isAdmin = user.role === "ADMIN";
 
     const tickets = await prisma.supportTicket.findMany({
@@ -28,6 +31,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
+    }
     const body = await req.json();
     const { orderId, category, priority, subject, description } = body;
 
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const user = await getSessionUser();
-    if (user.role !== "ADMIN") {
+    if (!user || user.role !== "ADMIN") {
       return NextResponse.json({ error: "Only administrators can resolve tickets" }, { status: 403 });
     }
 

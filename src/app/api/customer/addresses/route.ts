@@ -5,6 +5,9 @@ import { getSessionUser } from "@/lib/auth";
 export async function GET() {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ addresses: [] });
+    }
     const addresses = await prisma.customerAddress.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
@@ -22,6 +25,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
+    }
     const body = await req.json();
     const { label, addressLine, landmark, city, pincode, latitude, longitude, isDefault } = body;
 
@@ -66,6 +72,9 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
+    }
     const { searchParams } = new URL(req.url);
     let id = searchParams.get("id");
 
@@ -126,6 +135,9 @@ export async function DELETE(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
+    }
     const body = await req.json();
     const { id, isDefault } = body;
 

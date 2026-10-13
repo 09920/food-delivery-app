@@ -22,6 +22,7 @@ interface AuthContextType {
   }[];
   isLoading: boolean;
   switchPersona: (userId: string) => Promise<void>;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -36,14 +37,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch("/api/auth/session");
       const data = await res.json();
-      if (data.user) {
-        setUser(data.user);
-      }
+      setUser(data.user || null);
       if (data.availablePersonas) {
         setAvailablePersonas(data.availablePersonas);
       }
     } catch (e) {
       console.error("Auth fetch error:", e);
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -52,6 +52,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchSession();
   }, []);
+
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      setUser(null);
+      window.location.href = "/";
+    } catch (e) {
+      console.error("Logout error:", e);
+    }
+  };
 
   const switchPersona = async (userId: string) => {
     setIsLoading(true);
@@ -80,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         availablePersonas,
         isLoading,
         switchPersona,
+        logout,
         refreshUser: fetchSession,
       }}
     >

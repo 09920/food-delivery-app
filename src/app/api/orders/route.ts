@@ -4,10 +4,30 @@ import { getSessionUser } from "@/lib/auth";
 import { calculateOrderPricing } from "@/modules/cart/pricing";
 import { createRazorpayOrder } from "@/modules/payments/razorpay";
 import { generateDeliveryOtp, assignRiderToOrder } from "@/modules/delivery/assignment";
+import { startAutoPilotForOrder } from "@/lib/bot-simulator";
+
 
 export async function GET(req: NextRequest) {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ orders: [] });
+    }
+
+    // Auto-cancel stale orders older than 6 hours
+    const staleThreshold = new Date(Date.now() - 6 * 60 * 60 * 1000);
+    await prisma.order.updateMany({
+      where: {
+        status: { in: ["READY", "PICKED_UP", "PLACED", "ACCEPTED", "PREPARING"] },
+        createdAt: { lt: staleThreshold },
+      },
+      data: {
+        status: "CANCELLED",
+        cancellationReason: "Auto-cancelled: Order expired due to extended delivery delay",
+        cancelledByRole: "SYSTEM",
+      },
+    });
+
     const searchParams = req.nextUrl.searchParams;
     const filterRole = searchParams.get("role") || user.role;
 
@@ -79,6 +99,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentication required. Please sign in to place an order." },
+        { status: 401 }
+      );
+    }
     const body = await req.json();
 
     const {
@@ -87,6 +113,7 @@ export async function POST(req: NextRequest) {
       addressId,
       couponCode,
       idempotencyKey,
+      deliveryInstructions,
     } = body;
 
     if (!restaurantId || !items || !items.length || !addressId) {
@@ -155,6 +182,7 @@ export async function POST(req: NextRequest) {
             pincode: address.pincode,
             latitude: address.latitude,
             longitude: address.longitude,
+            deliveryInstructions: Array.isArray(deliveryInstructions) ? deliveryInstructions : [],
           }),
           restaurantSnapshot: JSON.stringify({
             name: restaurant.name,
@@ -163,7 +191,7 @@ export async function POST(req: NextRequest) {
             fssaiLicense: restaurant.fssaiLicense,
           }),
           deliveryOtpHash: deliveryOtp,
-          deliveryOtpExpiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours
+          deliveryOtpExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours validity
           estimatedDeliveryMinutes: restaurant.averagePreparationMinutes + 15,
           restaurantAcceptDeadline: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
           items: {
@@ -220,6 +248,9 @@ export async function POST(req: NextRequest) {
 
     // 7. Auto-assign nearby rider in background
     assignRiderToOrder(newOrder.id).catch(console.error);
+
+    // 8. Auto-Pilot Simulation Bot trigger (if enabled in Admin Dashboard)
+    startAutoPilotForOrder(newOrder.id).catch(console.error);
 
     return NextResponse.json({
       order: newOrder,

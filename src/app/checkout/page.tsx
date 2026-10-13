@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -35,9 +36,18 @@ export default function CheckoutPage() {
 
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
+  const [selectedInstructions, setSelectedInstructions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isAddingNewAddr, setIsAddingNewAddr] = useState(false);
+
+  const toggleInstruction = (instruction: string) => {
+    setSelectedInstructions((prev) =>
+      prev.includes(instruction)
+        ? prev.filter((i) => i !== instruction)
+        : [...prev, instruction]
+    );
+  };
 
   // New address form state
   const [newLabel, setNewLabel] = useState("Home");
@@ -117,6 +127,11 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
+    if (!user) {
+      setErrorMsg("Please sign in with your email to place this order.");
+      return;
+    }
+
     if (!selectedAddressId || !restaurantId || items.length === 0 || !pricing) {
       setErrorMsg("Please select a delivery address and confirm your cart items.");
       return;
@@ -137,6 +152,7 @@ export default function CheckoutPage() {
           addressId: selectedAddressId,
           couponCode,
           idempotencyKey,
+          deliveryInstructions: selectedInstructions,
         }),
       });
 
@@ -212,6 +228,28 @@ export default function CheckoutPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Left Column: Address & Payment Method */}
         <div className="md:col-span-2 space-y-6">
+          {/* Sign In Required Notice (Swiggy / Zomato workflow) */}
+          {!user && (
+            <div className="p-5 rounded-3xl bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/40 dark:to-amber-950/40 border border-orange-200 dark:border-orange-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-orange-500" />
+                  Account Authentication Required
+                </h3>
+                <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+                  Log in or create an account with your email to track your order live and confirm delivery.
+                </p>
+              </div>
+              <Link
+                href="/login"
+                className="self-start sm:self-auto px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-orange-500/20 active:scale-95 transition-all flex items-center gap-1.5 whitespace-nowrap"
+              >
+                <span>Sign In with Email</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
+
           {/* Section 1: Delivery Address */}
           <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
@@ -321,6 +359,44 @@ export default function CheckoutPage() {
                       </button>
                     </div>
                   </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Delivery Instructions for Partner */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm space-y-3">
+            <div>
+              <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                <span>📦</span> Delivery Instructions for Partner
+              </h2>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Select doorstep preferences for your rider
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              {[
+                { id: "Leave at door", label: "Leave at door / gate", icon: "🚪" },
+                { id: "Don't ring bell", label: "Don't ring bell (sleeping)", icon: "🔕" },
+                { id: "Avoid calling", label: "Avoid phone calls", icon: "📵" },
+                { id: "Pet at home", label: "Pet at home (take care)", icon: "🐕" },
+              ].map((opt) => {
+                const isChecked = selectedInstructions.includes(opt.id);
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => toggleInstruction(opt.id)}
+                    className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                      isChecked
+                        ? "border-orange-500 bg-orange-50 dark:bg-orange-950/40 text-orange-950 dark:text-orange-200 shadow-xs ring-1 ring-orange-500/30"
+                        : "border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-850 text-neutral-700 dark:text-neutral-300"
+                    }`}
+                  >
+                    <span className="text-xl mb-1.5">{opt.icon}</span>
+                    <span className="text-xs font-bold leading-tight">{opt.label}</span>
+                  </button>
                 );
               })}
             </div>

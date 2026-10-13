@@ -20,6 +20,10 @@ import {
   UserPlus,
   PlusCircle,
   Sparkles,
+  Bot,
+  Power,
+  Clock,
+  Zap,
 } from "lucide-react";
 
 interface AdminData {
@@ -76,6 +80,13 @@ export default function PlatformAdminDashboard() {
     "overview" | "restaurants" | "riders" | "tickets" | "audit" | "onboarding"
   >("overview");
   const [isLoading, setIsLoading] = useState(true);
+
+  // Auto-Pilot Simulation Bot State
+  const [botConfig, setBotConfig] = useState<{ enabled: boolean; delaySeconds: number }>({
+    enabled: true,
+    delaySeconds: 6,
+  });
+  const [isUpdatingBot, setIsUpdatingBot] = useState(false);
 
   // Manual Onboarding State
   const [onboardType, setOnboardType] = useState<"restaurant" | "rider" | "user">("restaurant");
@@ -190,8 +201,40 @@ export default function PlatformAdminDashboard() {
     }
   };
 
+  const fetchBotConfig = async () => {
+    try {
+      const res = await fetch("/api/admin/bot");
+      const json = await res.json();
+      if (typeof json.enabled === "boolean") {
+        setBotConfig(json);
+      }
+    } catch (e) {
+      console.error("Failed to fetch bot config:", e);
+    }
+  };
+
+  const updateBotConfig = async (newConfig: { enabled?: boolean; delaySeconds?: number }) => {
+    setIsUpdatingBot(true);
+    try {
+      const res = await fetch("/api/admin/bot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newConfig),
+      });
+      const json = await res.json();
+      if (json.success && json.config) {
+        setBotConfig(json.config);
+      }
+    } catch (e) {
+      console.error("Failed to update bot config:", e);
+    } finally {
+      setIsUpdatingBot(false);
+    }
+  };
+
   useEffect(() => {
     fetchAdminData();
+    fetchBotConfig();
   }, []);
 
   const handleToggleRestaurantApproval = async (restaurantId: string, currentApproved: boolean) => {
@@ -378,7 +421,108 @@ Generated At,${new Date().toISOString()}
 
       {/* Tab: Overview (Status breakdown) */}
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          {/* Auto-Pilot Simulation Bot Control Panel */}
+          <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-indigo-900/10 via-purple-900/5 to-pink-900/10 dark:from-indigo-950/40 dark:via-purple-950/20 dark:to-pink-950/30 border-2 border-indigo-500/30 dark:border-indigo-500/40 shadow-xl space-y-6 relative overflow-hidden backdrop-blur-md">
+            {/* Ambient decorative glow */}
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-md ${
+                  botConfig.enabled
+                    ? "bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-indigo-500/30"
+                    : "bg-neutral-200 dark:bg-neutral-800 text-neutral-500"
+                }`}>
+                  <Bot className={`w-6 h-6 ${botConfig.enabled ? "animate-pulse" : ""}`} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="text-lg font-black text-neutral-900 dark:text-neutral-100 tracking-tight">
+                      Auto-Pilot Order Simulation Bot
+                    </h2>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                      botConfig.enabled
+                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                        : "bg-neutral-200 dark:bg-neutral-800 text-neutral-500"
+                    }`}>
+                      {botConfig.enabled ? "● RUNNING" : "○ STOPPED"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 max-w-2xl leading-relaxed">
+                    Automatically simulates the complete customer order delivery lifecycle (Kitchen Acceptance ➔ Cooking ➔ Packaging ➔ Rider Pickup ➔ OTP Handover) with realistic time delays.
+                  </p>
+                </div>
+              </div>
+
+              {/* Master ON/OFF Switch */}
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  disabled={isUpdatingBot}
+                  onClick={() => updateBotConfig({ enabled: !botConfig.enabled })}
+                  className={`flex items-center gap-2.5 px-5 py-2.5 rounded-2xl text-xs font-black tracking-wide uppercase transition-all shadow-md ${
+                    botConfig.enabled
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 ring-2 ring-emerald-400/50"
+                      : "bg-neutral-700 hover:bg-neutral-800 text-white shadow-neutral-700/20"
+                  } disabled:opacity-50`}
+                >
+                  <Power className="w-4 h-4" />
+                  {botConfig.enabled ? "Bot Active (ON)" : "Bot Inactive (OFF)"}
+                </button>
+              </div>
+            </div>
+
+            {/* Pacing Speed & Simulation Stepper */}
+            <div className="pt-4 border-t border-neutral-200/60 dark:border-neutral-800/80 flex flex-col md:flex-row md:items-center justify-between gap-5">
+              {/* Pacing Selector */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-neutral-700 dark:text-neutral-300">
+                  <Clock className="w-4 h-4 text-indigo-500" />
+                  <span>Step Transition Interval:</span>
+                  <span className="font-mono text-indigo-600 dark:text-indigo-400 font-extrabold">{botConfig.delaySeconds} seconds</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {[
+                    { label: "⚡ 5s (Fast Demo)", sec: 5 },
+                    { label: "🔥 7s (Standard)", sec: 7 },
+                    { label: "⏱️ 10s (Detailed)", sec: 10 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.sec}
+                      type="button"
+                      disabled={isUpdatingBot}
+                      onClick={() => updateBotConfig({ delaySeconds: preset.sec })}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        botConfig.delaySeconds === preset.sec
+                          ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                          : "bg-white/80 dark:bg-neutral-800 hover:bg-neutral-100 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bot Step Sequence Preview */}
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-neutral-500">
+                <span className="px-2.5 py-1 rounded-lg bg-white/70 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200/60 dark:border-neutral-700">1. Placed</span>
+                <span>➔</span>
+                <span className="px-2.5 py-1 rounded-lg bg-white/70 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200/60 dark:border-neutral-700">2. Kitchen Accept</span>
+                <span>➔</span>
+                <span className="px-2.5 py-1 rounded-lg bg-white/70 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200/60 dark:border-neutral-700">3. Cooking</span>
+                <span>➔</span>
+                <span className="px-2.5 py-1 rounded-lg bg-white/70 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200/60 dark:border-neutral-700">4. Packed</span>
+                <span>➔</span>
+                <span className="px-2.5 py-1 rounded-lg bg-white/70 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200/60 dark:border-neutral-700">5. Rider Pickup</span>
+                <span>➔</span>
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">6. OTP Handover ✅</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm space-y-4">
             <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
               Orders Status Breakdown
@@ -429,6 +573,7 @@ Generated At,${new Date().toISOString()}
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {/* Tab: Restaurants Management */}

@@ -44,9 +44,9 @@ export const DEMO_USERS = {
 };
 
 /**
- * Resolves current active user from cookies or default to Customer for dev convenience
+ * Resolves current active user from cookies or returns null if unauthenticated
  */
-export async function getSessionUser(): Promise<SessionUser> {
+export async function getSessionUser(): Promise<SessionUser | null> {
   try {
     const cookieStore = await cookies();
     const activeUserId = cookieStore.get("ofds_user_id")?.value;
@@ -73,11 +73,6 @@ export async function getSessionUser(): Promise<SessionUser> {
     // Fallback if accessed outside request context
   }
 
-  // Default fallback user (Rahul Sharma - Customer)
-  return {
-    id: DEMO_USERS.customer.id,
-    name: DEMO_USERS.customer.name,
-    email: DEMO_USERS.customer.email,
-    role: DEMO_USERS.customer.role,
-  };
+  return null;
 }
+

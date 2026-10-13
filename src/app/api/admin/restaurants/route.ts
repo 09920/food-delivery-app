@@ -5,7 +5,7 @@ import { getSessionUser } from "@/lib/auth";
 export async function PATCH(req: NextRequest) {
   try {
     const user = await getSessionUser();
-    if (user.role !== "ADMIN") {
+    if (!user || user.role !== "ADMIN") {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 

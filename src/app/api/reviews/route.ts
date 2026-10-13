@@ -6,6 +6,9 @@ import { can } from "@/lib/permissions";
 export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Please sign in to post a review" }, { status: 401 });
+    }
     const body = await req.json();
     const { orderId, rating, comment } = body;
 

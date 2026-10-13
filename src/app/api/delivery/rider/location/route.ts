@@ -5,6 +5,9 @@ import { getSessionUser } from "@/lib/auth";
 export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Rider authentication required" }, { status: 401 });
+    }
     const body = await req.json();
     const { latitude, longitude } = body;
 

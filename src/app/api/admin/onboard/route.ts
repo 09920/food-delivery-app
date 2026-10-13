@@ -157,8 +157,8 @@ export async function POST(req: NextRequest) {
       // Log in AuditLog
       await prisma.auditLog.create({
         data: {
-          actorId: sessionUser.id,
-          actorRole: sessionUser.role,
+          actorId: sessionUser?.id || "admin_system",
+          actorRole: sessionUser?.role || "ADMIN",
           action: "RESTAURANT_ONBOARDED_MANUALLY",
           resource: "Restaurant",
           resourceId: restaurant.id,
@@ -218,8 +218,8 @@ export async function POST(req: NextRequest) {
       // Log Audit
       await prisma.auditLog.create({
         data: {
-          actorId: sessionUser.id,
-          actorRole: sessionUser.role,
+          actorId: sessionUser?.id || "admin_system",
+          actorRole: sessionUser?.role || "ADMIN",
           action: "RIDER_ONBOARDED_MANUALLY",
           resource: "RiderProfile",
           resourceId: profile.id,

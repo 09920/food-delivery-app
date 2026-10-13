@@ -48,3 +48,4 @@ dev.db-*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+backup_ui_original/

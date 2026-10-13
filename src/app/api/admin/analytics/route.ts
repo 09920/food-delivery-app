@@ -5,9 +5,23 @@ import { getSessionUser } from "@/lib/auth";
 export async function GET() {
   try {
     const user = await getSessionUser();
-    if (user.role !== "ADMIN") {
+    if (!user || user.role !== "ADMIN") {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
+
+    // Auto-cancel and sweep stale orders older than 6 hours
+    const staleThreshold = new Date(Date.now() - 6 * 60 * 60 * 1000);
+    await prisma.order.updateMany({
+      where: {
+        status: { in: ["READY", "PICKED_UP", "PLACED", "ACCEPTED", "PREPARING"] },
+        createdAt: { lt: staleThreshold },
+      },
+      data: {
+        status: "CANCELLED",
+        cancellationReason: "Auto-cancelled: Order expired due to extended delivery delay",
+        cancelledByRole: "SYSTEM",
+      },
+    });
 
     // 1. Order statistics
     const totalOrdersCount = await prisma.order.count();

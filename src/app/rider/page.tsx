@@ -237,7 +237,12 @@ export default function RiderDashboardPage() {
         ) : (
           <div className="space-y-6">
             {activeOrders.map((order) => {
-              let addressObj: { addressLine?: string; city?: string; pincode?: string } = {};
+              let addressObj: {
+                addressLine?: string;
+                city?: string;
+                pincode?: string;
+                deliveryInstructions?: string[];
+              } = {};
               try {
                 addressObj = JSON.parse(order.deliveryAddressSnapshot);
               } catch {}
@@ -303,6 +308,23 @@ export default function RiderDashboardPage() {
                       <p className="text-neutral-500">
                         {addressObj.addressLine}, {addressObj.city} - {addressObj.pincode}
                       </p>
+                      {addressObj.deliveryInstructions && addressObj.deliveryInstructions.length > 0 && (
+                        <div className="pt-2 border-t border-blue-200/60 dark:border-blue-900/60">
+                          <p className="text-[10px] font-bold text-blue-900 dark:text-blue-300 mb-1">
+                            Customer Doorstep Instructions:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {addressObj.deliveryInstructions.map((inst) => (
+                              <span
+                                key={inst}
+                                className="px-2 py-0.5 rounded-md bg-blue-200/80 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200 text-[10px] font-black"
+                              >
+                                {inst}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 

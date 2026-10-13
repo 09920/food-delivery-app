@@ -5,7 +5,7 @@ import { getSessionUser } from "@/lib/auth";
 export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
-    if (user.role !== "RESTAURANT_STAFF" && user.role !== "ADMIN") {
+    if (!user || (user.role !== "RESTAURANT_STAFF" && user.role !== "ADMIN")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

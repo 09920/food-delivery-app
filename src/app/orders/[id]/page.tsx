@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { formatPaiseToRupees, formatDateTime } from "@/lib/formatters";
@@ -19,7 +19,12 @@ import {
   LifeBuoy,
   RefreshCw,
   Sparkles,
+  FileText,
+  Printer,
 } from "lucide-react";
+import LiveGpsMap from "@/components/LiveGpsMap";
+import TaxInvoiceModal from "@/components/TaxInvoiceModal";
+import ConfettiCanvas from "@/components/ConfettiCanvas";
 
 interface OrderDetail {
   id: string;
@@ -90,6 +95,9 @@ function OrderTrackingContent() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const prevStatusRef = useRef<string | null>(null);
 
   const fetchOrder = async () => {
     try {
@@ -128,6 +136,61 @@ function OrderTrackingContent() {
       clearInterval(interval);
     };
   }, [id]);
+
+  const playChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, now); // D5 note
+      osc.frequency.exponentialRampToValueAtTime(880.00, now + 0.18); // A5 note
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.45);
+    } catch {}
+  };
+
+  const playCelebrationSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = new AudioCtx();
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 fanfare
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const startTime = ctx.currentTime + idx * 0.12;
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.15, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + 0.35);
+      });
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (order?.status) {
+      if (prevStatusRef.current && prevStatusRef.current !== order.status) {
+        playChime();
+        if (order.status === "DELIVERED") {
+          setShowConfetti(true);
+          playCelebrationSound();
+        }
+      } else if (!prevStatusRef.current && order.status === "DELIVERED") {
+        setShowConfetti(true);
+      }
+      prevStatusRef.current = order.status;
+    }
+  }, [order?.status]);
 
   const handleCancelOrder = async () => {
     if (!window.confirm("Are you sure you want to cancel this order?")) return;
@@ -203,7 +266,12 @@ function OrderTrackingContent() {
     );
   }
 
-  let addressObj: { addressLine?: string; city?: string; pincode?: string } = {};
+  let addressObj: {
+    addressLine?: string;
+    city?: string;
+    pincode?: string;
+    deliveryInstructions?: string[];
+  } = {};
   try {
     addressObj = JSON.parse(order.deliveryAddressSnapshot);
   } catch {}
@@ -223,6 +291,12 @@ function OrderTrackingContent() {
         </Link>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsInvoiceOpen(true)}
+            className="flex items-center gap-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:text-orange-600 transition-colors px-3 py-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm"
+          >
+            <FileText className="w-3.5 h-3.5 text-orange-500" /> Tax Invoice
+          </button>
           <Link
             href="/support"
             className="flex items-center gap-1 text-xs font-bold text-neutral-500 hover:text-orange-600 transition-colors px-3 py-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700"
@@ -267,6 +341,43 @@ function OrderTrackingContent() {
             </div>
           )}
         </div>
+
+        {/* Live Delivery ETA Banner */}
+        {!isTerminal && order.status !== "DELIVERED" && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-transparent border border-amber-500/30">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+              </span>
+              <div>
+                <p className="text-xs font-black text-neutral-900 dark:text-neutral-100 flex items-center gap-1.5">
+                  <span>Estimated Arrival:</span>
+                  <span className="text-orange-600 dark:text-orange-400 font-extrabold text-sm">
+                    ~{Math.max(10, order.estimatedDeliveryMinutes || 25)} mins
+                  </span>
+                </p>
+                <p className="text-[10px] text-neutral-500">
+                  Live satellite GPS telemetry active
+                </p>
+              </div>
+            </div>
+
+            {addressObj.deliveryInstructions && addressObj.deliveryInstructions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1">
+                <span className="text-[10px] font-bold text-neutral-400 mr-1">Doorstep Instructions:</span>
+                {addressObj.deliveryInstructions.map((inst) => (
+                  <span
+                    key={inst}
+                    className="px-2 py-0.5 rounded-lg bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 text-[10px] font-extrabold border border-orange-200 dark:border-orange-900/60"
+                  >
+                    {inst}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* State Machine Step Progress */}
         {isTerminal ? (
@@ -335,75 +446,40 @@ function OrderTrackingContent() {
         )}
       </div>
 
-      {/* Live Rider Tracking Radar / Card */}
-      {order.rider && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
-              <Bike className="w-5 h-5 text-blue-600" />
-              Delivery Partner Assigned
-            </h2>
-            <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              Live GPS Tracking
-            </span>
-          </div>
+      {/* Live Interactive GPS Satellite Map */}
+      <LiveGpsMap
+        status={order.status}
+        restaurantName={order.restaurant.name}
+        restaurantAddress={order.restaurant.address}
+        deliveryAddress={addressObj.addressLine ? `${addressObj.addressLine}, ${addressObj.city || "Mumbai"}` : "Saved Customer Address"}
+        riderName={order.rider?.name || "Delivery Partner"}
+        riderVehicle={order.rider?.riderProfile?.vehicleType || "Electric Scooter"}
+        estimatedMinutes={Math.max(5, order.estimatedDeliveryMinutes || 20)}
+      />
 
-          <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-extrabold flex items-center justify-center text-base">
-                {order.rider.name[0]}
-              </div>
-              <div>
-                <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                  {order.rider.name}
-                </p>
-                <p className="text-xs text-neutral-500">
-                  {order.rider.riderProfile?.vehicleType} • DL: {order.rider.riderProfile?.licenseNumber}
-                </p>
-              </div>
+      {/* Delivered Order Celebration Banner */}
+      {order.status === "DELIVERED" && (
+        <div className="p-6 rounded-3xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-green-500/15 border-2 border-emerald-500/40 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-emerald-600/30">
+              🎉
             </div>
-
-            <div className="flex items-center gap-3">
-              <a
-                href={`tel:${order.rider.phone}`}
-                className="px-4 py-2 rounded-xl bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity"
-              >
-                <Phone className="w-3.5 h-3.5" /> Call Rider
-              </a>
+            <div>
+              <h2 className="text-lg font-black text-emerald-950 dark:text-emerald-100">
+                Order Delivered at Doorstep!
+              </h2>
+              <p className="text-xs text-emerald-800 dark:text-emerald-300 mt-0.5">
+                OTP verified successfully. Thank you for dining with {order.restaurant.name}!
+              </p>
             </div>
           </div>
 
-          {/* Interactive GPS Radar Visualization */}
-          <div className="relative h-44 rounded-2xl overflow-hidden bg-neutral-950 text-white p-4 flex flex-col justify-between border border-neutral-800">
-            <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#f97316_1px,transparent_1px)] [background-size:16px_16px]" />
-
-            <div className="relative z-10 flex items-center justify-between text-xs text-neutral-400">
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-orange-500" />
-                Origin: {order.restaurant.name}
-              </span>
-              <span>Destination: {addressObj.addressLine || "Saved Address"}</span>
-            </div>
-
-            {/* Radar Center Line */}
-            <div className="relative z-10 flex items-center justify-center py-4">
-              <div className="relative flex items-center justify-center w-20 h-20 rounded-full border border-orange-500/30">
-                <div className="absolute w-12 h-12 rounded-full border border-orange-500/50 animate-ping" />
-                <Bike className="w-6 h-6 text-orange-500 animate-bounce" />
-              </div>
-            </div>
-
-            <div className="relative z-10 flex items-center justify-between text-[11px] text-neutral-400">
-              <span>
-                Coordinates: {order.rider.riderProfile?.currentLatitude.toFixed(4)},{" "}
-                {order.rider.riderProfile?.currentLongitude.toFixed(4)}
-              </span>
-              <span className="flex items-center gap-1 text-orange-400 font-mono">
-                <RefreshCw className="w-3 h-3 animate-spin" /> Connected via SSE
-              </span>
-            </div>
-          </div>
+          <button
+            onClick={() => setIsInvoiceOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 shrink-0"
+          >
+            <FileText className="w-4 h-4" /> Download Tax Invoice
+          </button>
         </div>
       )}
 
@@ -458,6 +534,26 @@ function OrderTrackingContent() {
                   placeholder="Tell us what you liked about the food and delivery..."
                   className="w-full p-3 text-xs border border-neutral-300 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
+
+                {/* Quick Compliment Tags */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[
+                    "🔥 Steaming Hot",
+                    "⚡ Express Delivery",
+                    "⭐ Perfect Packaging",
+                    "🛵 Friendly Rider",
+                    "😋 Delicious Taste",
+                  ].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setReviewComment((prev) => (prev ? `${prev} • ${tag}` : tag))}
+                      className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-[11px] font-semibold text-neutral-600 dark:text-neutral-300 hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-neutral-700 transition-colors border border-neutral-200 dark:border-neutral-700"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <button
@@ -491,6 +587,14 @@ function OrderTrackingContent() {
           ))}
         </div>
       </div>
+
+      {/* Confetti & Tax Invoice Modals */}
+      <ConfettiCanvas active={showConfetti} />
+      <TaxInvoiceModal
+        isOpen={isInvoiceOpen}
+        onClose={() => setIsInvoiceOpen(false)}
+        order={order as any}
+      />
     </div>
   );
 }

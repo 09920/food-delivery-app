@@ -61,6 +61,9 @@ model Restaurant {
   orders              Order[]
   reviews             Review[]
   favoriteRestaurants FavoriteRestaurant[]
+
+  @@index([isOpen])
+  @@index([city])
 }
 
 model RestaurantStaff {
@@ -115,6 +118,10 @@ model MenuItem {
   orderItems     OrderItem[]
   cartItems      CartItem[]
   favoriteDishes FavoriteDish[]
+
+  @@index([restaurantId])
+  @@index([categoryId])
+  @@index([isAvailable])
 }
 
 model CustomerAddress {
@@ -131,6 +138,8 @@ model CustomerAddress {
   createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Cart {
@@ -191,6 +200,12 @@ model Order {
   offers         RiderOffer[]
   review         Review?
   supportTickets SupportTicket[]
+
+  @@index([customerId])
+  @@index([restaurantId])
+  @@index([riderId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -372,3 +387,16 @@ model AuditLog {
   metadata   String?  // JSON string
   createdAt  DateTime @default(now())
 }
+
+model OtpVerification {
+  id        String   @id @default(uuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+

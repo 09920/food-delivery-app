@@ -8,6 +8,9 @@ export async function GET(
 ) {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
+    }
     const { id } = await context.params;
 
     const order = await prisma.order.findUnique({
@@ -23,6 +26,7 @@ export async function GET(
             imageUrl: true,
             latitude: true,
             longitude: true,
+            fssaiLicense: true,
           },
         },
         rider: {
