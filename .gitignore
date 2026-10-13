@@ -35,8 +35,12 @@ yarn-error.log*
 .env*.local
 !.env.example
 
-# local sqlite database
-dev.db*
+# local sqlite database (allow seed db, ignore transient journals)
+dev.db-journal
+dev.db-wal
+dev.db-shm
+dev.db-*
+!prisma/dev.db
 
 # vercel
 .vercel
