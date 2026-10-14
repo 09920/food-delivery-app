@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OFDS Accounts Directory - Download & Credentials</title>
+  <style>
+    :root {
+      --primary: #ea580c;
+      --primary-dark: #c2410c;
+      --bg: #0f1117;
+      --card-bg: #181b24;
+      --border: #282d3d;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 32px 16px; line-height: 1.5; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 32px; }
+    .header h1 { font-size: 28px; font-weight: 900; color: #ff7828; margin-bottom: 8px; }
+    .header p { color: var(--text-muted); font-size: 14px; }
+    .actions { display: flex; gap: 12px; justify-content: center; margin: 24px 0 36px 0; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 12px; font-size: 13px; font-weight: 700; text-decoration: none; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-primary { background: linear-gradient(135deg, #ea580c, #dc2626); color: #fff; box-shadow: 0 4px 14px rgba(234,88,12,0.3); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(234,88,12,0.4); }
+    .btn-secondary { background: #242938; color: #f1f5f9; border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #2f3549; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .card h2 { font-size: 18px; font-weight: 800; margin-bottom: 16px; color: #fb923c; display: flex; align-items: center; gap: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 10px 12px; background: rgba(255,255,255,0.03); color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+    td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    tr:last-child td { border-bottom: none; }
+    .email-badge { font-family: monospace; background: rgba(234,88,12,0.15); color: #fdba74; padding: 3px 8px; border-radius: 6px; font-weight: 600; font-size: 12px; }
+    .role-tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+    .role-admin { background: rgba(220,38,38,0.2); color: #f87171; }
+    .role-rider { background: rgba(59,130,246,0.2); color: #60a5fa; }
+    .role-staff { background: rgba(234,88,12,0.2); color: #fb923c; }
+    .role-customer { background: rgba(16,185,129,0.2); color: #34d399; }
+    @media print {
+      body { background: #fff; color: #000; padding: 0; }
+      .actions { display: none; }
+      .card { background: #fff; border: 1px solid #ccc; box-shadow: none; color: #000; }
+      .email-badge { color: #000; background: #eee; }
+      th { color: #555; background: #f5f5f5; border-bottom: 1px solid #ccc; }
+      td { border-bottom: 1px solid #eee; }
+      .card h2 { color: #ea580c; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>OFDS Account Directory</h1>
+      <p>Official record of all Administrators, Delivery Riders, Restaurant Kitchen Staff, and Customers.</p>
+      
+      <div class="actions">
+        <a href="/OFDS_Accounts_Directory.docx" download="OFDS_Accounts_Directory.docx" class="btn btn-primary">
+          📥 Download Word Document (.docx)
+        </a>
+        <button onclick="window.print()" class="btn btn-secondary">
+          🖨️ Print / Save as PDF
+        </button>
+        <a href="/" class="btn btn-secondary">
+          ← Back to App
+        </a>
+      </div>
+    </div>
+
+    <!-- Admin -->
+    <div class="card">
+      <h2>👑 1. Platform Administrator</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Name</th>
+            <th>Email ID</th>
+            <th>Phone</th>
+            <th>Dashboard</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="role-tag role-admin">ADMIN</span></td>
+            <td><strong>Sanjay Mehra</strong> (Ops Admin)</td>
+            <td><span class="email-badge">admin@ofds-platform.com</span></td>
+            <td>+91 9899001122</td>
+            <td><a href="/admin" style="color: #ea580c; font-weight: bold;">/admin</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Riders -->
+    <div class="card">
+      <h2>🛵 2. Delivery Riders</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Rider Name</th>
+            <th>Login Email</th>
+            <th>Vehicle</th>
+            <th>License Number</th>
+            <th>Phone</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="role-tag role-rider">RIDER</span></td>
+            <td><strong>Amit Kumar</strong></td>
+            <td><span class="email-badge">amit.rider@example.com</span></td>
+            <td>Motorcycle</td>
+            <td>MH-02-2021-008741</td>
+            <td>+91 9988776655</td>
+          </tr>
+          <tr>
+            <td><span class="role-tag role-rider">RIDER</span></td>
+            <td><strong>Rajesh Verma</strong></td>
+            <td><span class="email-badge">rajesh.rider@example.com</span></td>
+            <td>EV Scooter</td>
+            <td>MH-01-2022-005612</td>
+            <td>+91 9911223344</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Restaurant Staff -->
+    <div class="card">
+      <h2>🍳 3. Restaurant Kitchen Staff & Owners (All 12 Restaurants)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Restaurant</th>
+            <th>Staff Name</th>
+            <th>Staff Login Email</th>
+            <th>Phone</th>
+            <th>Cuisine</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Royal Spice Kitchen</strong></td>
+            <td>Vikram Singhania</td>
+            <td><span class="email-badge">vikram@royalspice.com</span></td>
+            <td>+91 9811223344</td>
+            <td>Awadhi Dum Biryani</td>
+          </tr>
+          <tr>
+            <td><strong>Dragon Wok & Bao</strong></td>
+            <td>Chef Lin Mei</td>
+            <td><span class="email-badge">lin@dragonwok.com</span></td>
+            <td>+91 9877665544</td>
+            <td>Pan-Asian & Dim Sum</td>
+          </tr>
+          <tr>
+            <td><strong>La Piazza Trattoria</strong></td>
+            <td>Chef Marco Rossi</td>
+            <td><span class="email-badge">marco@lapiazza.com</span></td>
+            <td>+91 9866554433</td>
+            <td>Woodfired Pizza</td>
+          </tr>
+          <tr>
+            <td><strong>Dosa Craft & Tiffin</strong></td>
+            <td>Meenakshi Iyer</td>
+            <td><span class="email-badge">meenakshi@dosacraft.com</span></td>
+            <td>+91 9855443322</td>
+            <td>South Indian Dosas</td>
+          </tr>
+          <tr>
+            <td><strong>Burger Foundry</strong></td>
+            <td>Kabir Anand</td>
+            <td><span class="email-badge">kabir@burgerfoundry.com</span></td>
+            <td>+91 9844332211</td>
+            <td>Gourmet Burgers</td>
+          </tr>
+          <tr>
+            <td><strong>Sakura Sushi House</strong></td>
+            <td>Chef Kenji Sato</td>
+            <td><span class="email-badge">kenji@sakurasushi.com</span></td>
+            <td>+91 9833221100</td>
+            <td>Japanese Nigiri</td>
+          </tr>
+          <tr>
+            <td><strong>El Fuego Taqueria</strong></td>
+            <td>Carlos Mendez</td>
+            <td><span class="email-badge">carlos@elfuegotacos.com</span></td>
+            <td>+91 9822110099</td>
+            <td>Mexican Tacos</td>
+          </tr>
+          <tr>
+            <td><strong>Beirut Lounge</strong></td>
+            <td>Ziad Haddad</td>
+            <td><span class="email-badge">ziad@beirutlounge.com</span></td>
+            <td>+91 9811009988</td>
+            <td>Lebanese Shawarma</td>
+          </tr>
+          <tr>
+            <td><strong>Le Petit Croissant</strong></td>
+            <td>Camille Dubois</td>
+            <td><span class="email-badge">camille@lepetitcroissant.com</span></td>
+            <td>+91 9899887766</td>
+            <td>French Bakery</td>
+          </tr>
+          <tr>
+            <td><strong>The Green Bowl Co.</strong></td>
+            <td>Ananya Sen</td>
+            <td><span class="email-badge">ananya@greenbowlhealth.com</span></td>
+            <td>+91 9888776655</td>
+            <td>Superfood Bowls</td>
+          </tr>
+          <tr>
+            <td><strong>Chowpatty Chaat</strong></td>
+            <td>Girish Sharma</td>
+            <td><span class="email-badge">girish@chowpattychaat.com</span></td>
+            <td>+91 9877889900</td>
+            <td>Mumbai Chaat</td>
+          </tr>
+          <tr>
+            <td><strong>Southern Coast Seafood</strong></td>
+            <td>Devdas Naik</td>
+            <td><span class="email-badge">devdas@southerncoast.com</span></td>
+            <td>+91 9866778899</td>
+            <td>Coastal Seafood</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Customers -->
+    <div class="card">
+      <h2>👤 4. Customer / User Accounts</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Name</th>
+            <th>Login Email</th>
+            <th>Phone</th>
+            <th>Address</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="role-tag role-customer">CUSTOMER</span></td>
+            <td><strong>Rahul Sharma</strong></td>
+            <td><span class="email-badge">rahul@example.com</span></td>
+            <td>+91 9876543210</td>
+            <td>Perry Cross Rd, Bandra West</td>
+          </tr>
+          <tr>
+            <td><span class="role-tag role-customer">CUSTOMER</span></td>
+            <td><strong>Priya Patel</strong></td>
+            <td><span class="email-badge">priya@example.com</span></td>
+            <td>+91 9822334455</td>
+            <td>Gulmohar Cross Rd, Juhu</td>
+          </tr>
+          <tr>
+            <td><span class="role-tag role-customer">CUSTOMER</span></td>
+            <td><strong>Aman Kapoor</strong></td>
+            <td><span class="email-badge">aman@example.com</span></td>
+            <td>+91 9833445566</td>
+            <td>Pali Hill, Bandra West</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
