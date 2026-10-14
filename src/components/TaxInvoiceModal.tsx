@@ -63,11 +63,16 @@ export default function TaxInvoiceModal({ isOpen, onClose, order }: TaxInvoiceMo
   const total = order.totalPaise;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto print:p-0 print:bg-white">
+    <div
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-sm overflow-y-auto print:p-0 print:bg-white"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       {/* Modal Container */}
-      <div className="relative w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden my-8 print:shadow-none print:border-none print:my-0 print:rounded-none">
-        {/* Top Control Bar (Hidden on print) */}
-        <div className="p-4 bg-neutral-100 dark:bg-neutral-800/80 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between print:hidden">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden my-3 sm:my-8 print:shadow-none print:border-none print:my-0 print:rounded-none flex flex-col max-h-[92vh] sm:max-h-[90vh]">
+        {/* Top Control Bar (Sticky & Hidden on print) */}
+        <div className="sticky top-0 z-30 px-4 py-3 sm:py-3.5 bg-neutral-100/95 dark:bg-neutral-800/95 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-orange-600" />
             <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
@@ -80,19 +85,20 @@ export default function TaxInvoiceModal({ isOpen, onClose, order }: TaxInvoiceMo
               onClick={handlePrint}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold transition-colors shadow-md shadow-orange-600/20"
             >
-              <Printer className="w-3.5 h-3.5" /> Print / Save as PDF
+              <Printer className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Print / Save as PDF</span><span className="sm:hidden">Print PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 text-neutral-700 dark:text-neutral-300 transition-colors"
+              aria-label="Close invoice"
+              className="p-1.5 rounded-xl bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 text-neutral-700 dark:text-neutral-300 transition-colors flex items-center justify-center"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Printable Invoice Document Body */}
-        <div className="p-6 sm:p-8 space-y-6 text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-900 print:text-black print:bg-white print:p-4">
+        <div className="p-5 sm:p-8 space-y-6 text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-900 print:text-black print:bg-white print:p-4 overflow-y-auto flex-1">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b border-neutral-200 dark:border-neutral-800 pb-5 gap-4">
             <div>
@@ -221,6 +227,22 @@ export default function TaxInvoiceModal({ isOpen, onClose, order }: TaxInvoiceMo
           <div className="pt-4 border-t border-neutral-100 dark:border-neutral-800 text-center text-[10px] text-neutral-400">
             Thank you for dining with {order.restaurant.name}! This is a computer-generated tax invoice and requires no physical signature.
           </div>
+        </div>
+
+        {/* Bottom Mobile Action Bar (Hidden on print) */}
+        <div className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/90 flex sm:hidden gap-2 print:hidden">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 font-bold text-xs text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          >
+            Close Invoice
+          </button>
+          <button
+            onClick={handlePrint}
+            className="flex-1 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 font-bold text-xs text-white transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-orange-600/20"
+          >
+            <Printer className="w-3.5 h-3.5" /> Print PDF
+          </button>
         </div>
       </div>
     </div>

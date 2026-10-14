@@ -97,24 +97,41 @@ function OrderTrackingContent() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const prevStatusRef = useRef<string | null>(null);
 
-  const fetchOrder = async () => {
+  const fetchOrder = async (isInitial = false) => {
+    if (!id) return;
     try {
       const res = await fetch(`/api/orders/${id}`);
-      const data = await res.json();
-      if (data.order) {
-        setOrder(data.order);
+      if (res.status === 404) {
+        if (isInitial && retryCount < 3) {
+          setTimeout(() => {
+            setRetryCount((prev) => prev + 1);
+            fetchOrder(true);
+          }, 800);
+          return;
+        }
+        setNotFound(true);
+      } else if (res.ok) {
+        const data = await res.json();
+        if (data.order) {
+          setOrder(data.order);
+          setNotFound(false);
+        }
       }
     } catch (e) {
-      console.error(e);
+      console.error("Failed to fetch order:", e);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchOrder();
+    if (!id) return;
+    setIsLoading(true);
+    fetchOrder(true);
 
     // Subscribe to SSE stream for live updates
     const eventSource = new EventSource(`/api/realtime/order-stream?orderId=${id}`);
@@ -129,7 +146,7 @@ function OrderTrackingContent() {
     });
 
     // Fallback polling interval
-    const interval = setInterval(fetchOrder, 4000);
+    const interval = setInterval(() => fetchOrder(false), 4000);
 
     return () => {
       eventSource.close();
@@ -246,22 +263,23 @@ function OrderTrackingContent() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6 animate-pulse py-8">
-        <div className="h-8 w-48 bg-neutral-200 dark:bg-neutral-800 rounded" />
-        <div className="h-48 rounded-3xl bg-neutral-200 dark:bg-neutral-800" />
-      </div>
-    );
-  }
+  if (isLoading || !order) {
+    if (notFound) {
+      return (
+        <div className="py-20 text-center">
+          <h2 className="text-xl font-bold">Order Not Found</h2>
+          <Link href="/" className="mt-4 inline-block text-orange-600 font-bold text-xs">
+            Return to Home
+          </Link>
+        </div>
+      );
+    }
 
-  if (!order) {
     return (
-      <div className="py-20 text-center">
-        <h2 className="text-xl font-bold">Order Not Found</h2>
-        <Link href="/" className="mt-4 inline-block text-orange-600 font-bold text-xs">
-          Return to Home
-        </Link>
+      <div className="space-y-6 animate-pulse py-8 max-w-4xl mx-auto">
+        <div className="h-8 w-48 bg-neutral-200 dark:bg-neutral-800 rounded-xl" />
+        <div className="h-56 rounded-3xl bg-neutral-200 dark:bg-neutral-800" />
+        <div className="h-64 rounded-3xl bg-neutral-200 dark:bg-neutral-800" />
       </div>
     );
   }
